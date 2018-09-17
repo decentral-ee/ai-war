@@ -1,9 +1,10 @@
 pragma solidity ^0.4.23;
 
 contract GameEvent {
-    function grantBalanceLock(address gameRound, int balance) public;
-    function getBrantedBalanceLock(address player) public view;
-    function lockBalance(address player) public;
-    function transferBalance(address from, address to) public;
-    function unlockBalance(address player) public;
+    function grantAllowance(address gameRound, uint newAllowance) external;
+    function getGrantedAllowance(address player) external view returns (uint);
+    function lockBalance(address player, uint balance) external returns (bool);
+    function getLockedBalance(address player) external view returns (uint);
+    function transferLockedBalance(address from, address to, uint balance) external;
+    function unlockAllBalance(address player) external;
 }

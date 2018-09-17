@@ -18,15 +18,17 @@ contract GameRound is Owned {
     /**
      * @title Maximum size of bet any player could take
      * Any minus value means there is no maximum size of bets
+     *
+     * FIXME to be implemented
      */
     int public maximumBetSizeForAll;
 
     struct PlayerData {
         address player;
-        int maximumBetSize;
-        int currentBetSize;
+        uint maximumBetSize;
+        uint currentBetSize;
         bool allowTakeOver;
-        int takeOverFee;
+        uint takeOverFee;
     }
     mapping(uint => PlayerData) public players;
 
@@ -46,7 +48,7 @@ contract GameRound is Owned {
 
     uint public gameOverReason;
 
-    uint8 public causingSide;
+    uint public causingSide;
 
     //
     // Configuration functions, only used by creator
@@ -61,19 +63,24 @@ contract GameRound is Owned {
         state = State.Preparing;
 
         uint initialDataLength = game.initialData().length;
+        gameData = new bytes(initialDataLength);
         for (uint i = 0; i < initialDataLength; i++) {
-            gameData.push(game.initialData()[i]);
+            gameData[i] = game.initialData()[i];
         }
     }
 
     function setPlayer(
         uint side,
         address player,
-        int maximumBetSize,
-        int currentBetSize) public {
-        require(side > 0, "Side has to be greater than 0");
+        uint maximumBetSize,
+        uint currentBetSize) public {
         require(state == State.Preparing, "Game has already started");
+        require(side > 0, "Side has to be greater than 0");
         PlayerData storage playerData = players[side];
+        require(playerData.player == 0, "Player has already been set");
+        uint grantedAllowance = gameEvent.getGrantedAllowance(player);
+        require(grantedAllowance >= maximumBetSize, "Not enough allowance granted");
+        require(gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
         playerData.player = player;
         playerData.maximumBetSize = maximumBetSize;
         playerData.currentBetSize = currentBetSize;
@@ -96,11 +103,11 @@ contract GameRound is Owned {
     }
 
     function makeMove(
-        uint8 side, uint16 data,
-        int maximumBetSize,
-        int currentBetSize,
+        uint side, uint16 data,
+        uint maximumBetSize,
+        uint currentBetSize,
         bool allowTakeOver,
-        int takeOverFee) public {
+        uint takeOverFee) public {
         require(state == State.InProgress, "Game is not in progress");
         GameRound.PlayerData storage playerData = players[side];
         require(playerData.player != address(0), "Invalid side");
@@ -124,15 +131,16 @@ contract GameRound is Owned {
 
     function takeOver(
         uint side,
-        int maximumBetSize,
-        int currentBetSize,
+        uint maximumBetSize,
+        uint currentBetSize,
         bool allowTakeOver,
-        int takeOverFee) public {
+        uint takeOverFee) public {
         require(side > 0, "Side has to be greater than 0");
         require(state == State.InProgress, "Game is not in progress");
         require(maximumBetSize >= currentBetSize, "maximumBetSize should not be smaller than currentBetSize");
         PlayerData storage playerData = players[side];
 
+        // FIXME
         //require(gameEvent.validatePlayer(msg.sender, maximumBetSize), "player cannot be validated");
 
         playerData.player = msg.sender;
@@ -146,13 +154,13 @@ contract GameRound is Owned {
         //
     }*/
 
-    function syncGameData(uint untilTurn) public {
+    function syncGameData(uint16 untilTurn) public {
         require(untilTurn > syncedTurn, "Already synced to the specified turn");
         require(untilTurn <= moves.length, "Not enough move data to sync");
         (bytes memory newData,
         uint syncedTurn_,
         uint gameOverReason_,
-        uint8 causingSide_) = game.syncGameData(
+        uint causingSide_) = game.syncGameData(
             gameData, moves,
             syncedTurn, untilTurn);
         uint dataLength = gameData.length;
@@ -165,10 +173,24 @@ contract GameRound is Owned {
             if (gameOverReason != gameOverReason_) {
                 gameOverReason = gameOverReason_;
                 causingSide = causingSide_;
+                state = State.Ended;
+                emit AIWar_GameRound_Ended(gameEvent, game, this);
             }
         }
     }
 
+    function settlePayout() external {
+        require(state == State.Ended, "Game has not ended yet");
+        if (gameOverReason == uint(Game.GameOverReason.HAS_WINNER)) {
+            address winner = players[causingSide].player;
+            address loser = players[causingSide == 1 ? 2 : 1].player;
+            uint lostAmount = gameEvent.getLockedBalance(loser);
+            gameEvent.transferLockedBalance(loser, winner, lostAmount);
+        }
+        gameEvent.unlockAllBalance(players[1].player);
+        gameEvent.unlockAllBalance(players[2].player);
+    }
+
     event AIWar_GameRound_Started(address indexed gameEvent, address indexed game, address round);
-    //event AIWar_GameRound_Over(address indexed gameEvent, address indexed game, address round);
+    event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game, address round);
 }

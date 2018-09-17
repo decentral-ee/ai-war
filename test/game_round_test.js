@@ -1,11 +1,13 @@
-const GameRound = artifacts.require("./GameRound.sol");
+const OpenEtherbetGameEventContract = artifacts.require("./OpenEtherbetGameEvent.sol");
+const GameRoundContract = artifacts.require("./GameRound.sol");
 const TicTacToeGameContract = artifacts.require("./TicTacToeGame.sol");
 const TicTacToeGame = require('../sdk/games/tictactoe_game.js');
 
 contract('GameRound test cases', function(accounts) {
-    const MAXIMUM_BET_SIZE_FOR_ALL = 100;
-    const INITIAL_MAXIMUM_BET_SIZE = 10;
+    const MAXIMUM_BET_SIZE_FOR_ALL = web3.toWei(100, "ether");
+    const INITIAL_MAXIMUM_BET_SIZE = web3.toWei(10, "ether");
     const INITIAL_BET_SIZE = 1;
+    let gameEvent;
     let game;
     let round;
     let player1 = accounts[0];
@@ -38,6 +40,7 @@ contract('GameRound test cases', function(accounts) {
         let gasUsed = tx.receipt.gasUsed;
         console.log(`${topic}: gasUsed ${gasUsed}`);
         countGas(params, gasUsed);
+        return tx;
     }
 
     function decodeMoveData(moveData) {
@@ -61,17 +64,37 @@ contract('GameRound test cases', function(accounts) {
     }
 
     before(async function () {
-        game = await createContract("TicTacToeGame created", TicTacToeGameContract, { from: creator, gas: 2000000 });
+        game = await createContract("TicTacToeGame created",
+            TicTacToeGameContract,
+            { from: creator, gas: 2000000 });
         // reset gas counter
         gasCounter = {};
     })
 
     beforeEach(async function () {
-        round = await createContract("GameRound created", GameRound, 0, game.address, MAXIMUM_BET_SIZE_FOR_ALL, { from: creator, gas: 2000000 });
+        gameEvent = await createContract('OpenEtherbetGameEventContract Created', OpenEtherbetGameEventContract,
+            { from: creator });
+
+        round = await createContract('GameRound created', GameRoundContract,
+        gameEvent.address, game.address, MAXIMUM_BET_SIZE_FOR_ALL,
+            { from: creator, gas: 2000000 });
+
+        await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
+            { from: player1, value: INITIAL_MAXIMUM_BET_SIZE });
+        await sendTransaction('gameEvent.grantAllowance player1', gameEvent.grantAllowance,
+            round.address, INITIAL_MAXIMUM_BET_SIZE,
+            { from: player1 });
         await sendTransaction('round.setPlayer 1', round.setPlayer,
             1, player1, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, { from: creator });
+
+        await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
+            { from: player2, value: INITIAL_MAXIMUM_BET_SIZE });
+        await sendTransaction('gameEvent.grantAllowance player2', gameEvent.grantAllowance,
+            round.address, INITIAL_MAXIMUM_BET_SIZE,
+            { from: player2 });
         await sendTransaction('round.setPlayer 2', round.setPlayer,
             2, player2, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, { from: creator });
+
         await sendTransaction('round.start', round.start, { from: creator });
     })
 
@@ -134,5 +157,26 @@ contract('GameRound test cases', function(accounts) {
         assert.equal(gameStatus.syncedTurn, 6);
         assert.equal(gameStatus.gameOverReason, 1);
         assert.equal(gameStatus.causingSide, 2);
+        assert.equal((await round.state.call()).toNumber(), 2 /* round.State.Ended */);
+
+        let p1a = await web3.eth.getBalance(player1);
+        let p2a = await web3.eth.getBalance(player2);
+        await sendTransaction("round.settlePayout", round.settlePayout, { from: creator });
+        await sendTransaction('gameEvent.grantAllowance player1 to zero', gameEvent.grantAllowance,
+            round.address, 0,
+            { from: player1 });
+        await sendTransaction("gameEvent.withdrawAll 1", gameEvent.withdrawAll, { from: player1 });
+        await sendTransaction('gameEvent.grantAllowance player2 to zero', gameEvent.grantAllowance,
+            round.address, 0,
+            { from: player2 });
+        await sendTransaction("gameEvent.withdrawAll 2", gameEvent.withdrawAll, { from: player2 });
+        let p1b = await web3.eth.getBalance(player1);
+        let p2b = await web3.eth.getBalance(player2);
+        let p1Withdrew = web3.fromWei(p1b - p1a, 'ether');
+        let p2Withdrew = web3.fromWei(p2b - p2a, 'ether');
+        console.log(`player 1 withdrew ${p1Withdrew}`);
+        console.log(`player 2 withdrew ${p2Withdrew}`);
+        assert.isTrue(p1Withdrew < 0 && p1Withdrew > -0.1);
+        assert.isTrue(p2Withdrew > 19.9 && p2Withdrew < 20.0);
     })
 });

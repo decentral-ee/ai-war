@@ -39,7 +39,7 @@ contract TicTacToeGame is Game {
             bytes memory newData,
             uint syncedTurn,
             uint gameOverReason,
-            uint8 causingSide) {
+            uint causingSide) {
         uint i;
         require(data.length == GAME_DATA_LENGTH, "Wrong game data length");
         // copy data
@@ -56,7 +56,7 @@ contract TicTacToeGame is Game {
         }
         // make moves
         for (i = previousTurn; i < toTurn; ++i) {
-            (uint8 causingSide_, uint gameOverReason_) = makeMove(newData, i, moves[i]);
+            (uint causingSide_, uint gameOverReason_) = makeMove(newData, i, moves[i]);
             if (gameOverReason_ > 0) {
                 syncedTurn = i + 1;
                 causingSide = causingSide_;
@@ -82,7 +82,7 @@ contract TicTacToeGame is Game {
     }
 
     function makeMove(bytes memory data, uint previousTurn, uint16 move) private pure returns (
-            uint8 causingSide,
+            uint causingSide,
             uint gameOverReason
         ) {
         (uint8 side, uint16 x, uint16 y, uint invalidMoveReason) = decodeTicTacToeMove(move);

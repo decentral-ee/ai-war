@@ -17,7 +17,7 @@ contract Game {
             bytes newData,
             uint syncedTurn,
             uint gameOverReason,
-            uint8 causingSide);
+            uint causingSide);
 
     function decodeGameOverReasonBase(uint gameOverReason) internal pure returns (string reason) {
                if (gameOverReason == uint(GameOverReason.NOT_OVER)) {
