@@ -26,8 +26,15 @@ contract('GameRound test cases', function(accounts) {
         }
     }
     async function createContract(topic, contract) {
+        let fargs = Array.from(arguments).slice(2);
         let params = arguments[arguments.length-1];
-        let instance = await contract.new.apply(contract, Array.from(arguments).slice(2));
+        let contractClass = web3.eth.contract(contract.abi);
+        params.data = contract.binary; // use binary instead of bytecode due to library links
+        let contractCreationData = contractClass.new.getData.apply(null, fargs);
+        let gasEstimation = await web3.eth.estimateGas({ data: contractCreationData });
+        delete params.data; // not needed after gas estimated
+        params.gas = gasEstimation + 20000;
+        let instance = await contract.new.apply(contract, fargs);
         let txHash = instance.contract.transactionHash;
         let txReceipt = await web3.eth.getTransactionReceipt(txHash);
         let gasUsed = txReceipt.gasUsed;
@@ -37,8 +44,11 @@ contract('GameRound test cases', function(accounts) {
     }
 
     async function sendTransaction(topic, f) {
+        const fargs = Array.from(arguments).slice(2);
         let params = arguments[arguments.length-1];
-        let tx = await f.apply(null, Array.from(arguments).slice(2));
+        let gasEstimation = await f.estimateGas.apply(null, fargs);
+        params.gas = gasEstimation + 20000;
+        let tx = await f.apply(null, fargs);
         let gasUsed = tx.receipt.gasUsed;
         console.log(`${topic}: gasUsed ${gasUsed}`);
         countGas(params, gasUsed);
@@ -71,7 +81,7 @@ contract('GameRound test cases', function(accounts) {
 
         round = await createContract('GameRound created', GameRoundContract,
         gameEvent.address, game.address, MAXIMUM_BET_SIZE_FOR_ALL,
-            { from: creator, gas: 3000000 });
+            { from: creator });
 
         await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
             { from: player1, value: INITIAL_MAXIMUM_BET_SIZE });
@@ -95,7 +105,7 @@ contract('GameRound test cases', function(accounts) {
     before(async function () {
         game = await createContract("TicTacToeGame created",
             TicTacToeGameContract,
-            { from: creator, gas: 2000000 });
+            { from: creator });
         gameRoundLib = await createContract("GameRoundLib created",
             GameRoundLib,
             { from: creator });
