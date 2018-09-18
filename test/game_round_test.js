@@ -1,12 +1,14 @@
-const OpenEtherbetGameEventContract = artifacts.require("./OpenEtherbetGameEvent.sol");
-const GameRoundContract = artifacts.require("./GameRound.sol");
-const TicTacToeGameContract = artifacts.require("./TicTacToeGame.sol");
-const TicTacToeGame = require('../sdk/games/tictactoe_game.js');
+const OpenEtherbetGameEventContract = artifacts.require("OpenEtherbetGameEvent");
+const GameRoundLib = artifacts.require("GameRoundLib");
+const GameRoundContract = artifacts.require("GameRound");
+const TicTacToeGameContract = artifacts.require("TicTacToeGame");
+const TicTacToeGame = require('../sdk/games/tictactoe_game');
 
 contract('GameRound test cases', function(accounts) {
     const MAXIMUM_BET_SIZE_FOR_ALL = web3.toWei(100, "ether");
     const INITIAL_MAXIMUM_BET_SIZE = web3.toWei(10, "ether");
     const INITIAL_BET_SIZE = 1;
+    let gameRoundLib;
     let gameEvent;
     let game;
     let round;
@@ -29,7 +31,7 @@ contract('GameRound test cases', function(accounts) {
         let txHash = instance.contract.transactionHash;
         let txReceipt = await web3.eth.getTransactionReceipt(txHash);
         let gasUsed = txReceipt.gasUsed;
-        console.log(`${topic}: gasUsed ${gasUsed}`);
+        console.log(`${topic}: gasUsed ${gasUsed} at ${instance.address}`);
         countGas(params, gasUsed);
         return instance;
     }
@@ -48,12 +50,12 @@ contract('GameRound test cases', function(accounts) {
     }
 
     async function digestGameRoundStatus(round) {
-        let syncedTurn = (await round.syncedTurn.call()).toNumber();
-        let gameOverReason = (await round.gameOverReason.call()).toNumber();
-        let causingSide = (await round.causingSide.call()).toNumber();
+        let syncedTurn = (await round.getSyncedTurn.call()).toNumber();
+        let gameOverReason = (await round.getGameOverReason.call()).toNumber();
+        let causingSide = (await round.getCausingSide.call()).toNumber();
         console.log(`------------------------------------------------------`);
         console.log(`Round synced turn at ${syncedTurn}`);
-        gameData = await round.gameData.call();
+        gameData = await round.getGameData.call();
         TicTacToeGame.printGameData(gameData);
         if (gameOverReason) {
             gameOverReasonStr = await game.decodeGameOverReason.call(gameOverReason);
@@ -63,21 +65,13 @@ contract('GameRound test cases', function(accounts) {
         return {syncedTurn, gameOverReason, causingSide};
     }
 
-    before(async function () {
-        game = await createContract("TicTacToeGame created",
-            TicTacToeGameContract,
-            { from: creator, gas: 2000000 });
-        // reset gas counter
-        gasCounter = {};
-    })
-
-    beforeEach(async function () {
+    async function setupTypicalGameRound() {
         gameEvent = await createContract('OpenEtherbetGameEventContract Created', OpenEtherbetGameEventContract,
             { from: creator });
 
         round = await createContract('GameRound created', GameRoundContract,
         gameEvent.address, game.address, MAXIMUM_BET_SIZE_FOR_ALL,
-            { from: creator, gas: 2000000 });
+            { from: creator, gas: 3000000 });
 
         await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
             { from: player1, value: INITIAL_MAXIMUM_BET_SIZE });
@@ -96,18 +90,37 @@ contract('GameRound test cases', function(accounts) {
             2, player2, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, { from: creator });
 
         await sendTransaction('round.start', round.start, { from: creator });
+    }
+
+    before(async function () {
+        game = await createContract("TicTacToeGame created",
+            TicTacToeGameContract,
+            { from: creator, gas: 2000000 });
+        gameRoundLib = await createContract("GameRoundLib created",
+            GameRoundLib,
+            { from: creator });
+        GameRoundContract.link('GameRoundLib', gameRoundLib.address);
+    })
+
+    beforeEach(async function () {
+        console.log(`#### Starting test case: ${this.currentTest.title}`);
+        // reset gas counter
+        gasCounter = {};
     })
 
     afterEach(async function () {
+        console.log(`# Gas usage summary:`);
         console.log(`creator used gas ${gasCounter[creator]}`);
         console.log(`player1 used gas ${gasCounter[player1]}`);
         console.log(`player2 used gas ${gasCounter[player2]}`);
-        gasCounter = {};
+        console.log(`#### Test case ended: ${this.currentTest.title}`);
     })
 
     it("a typical tictactoe game round", async function() {
         let move;
         let gameData;
+
+        await setupTypicalGameRound();
 
         let moveData1 = TicTacToeGame.createMoveData(1, 1);
         await sendTransaction(`round.makeMove 1 ${decodeMoveData(moveData1)}`, round.makeMove,
@@ -157,7 +170,7 @@ contract('GameRound test cases', function(accounts) {
         assert.equal(gameStatus.syncedTurn, 6);
         assert.equal(gameStatus.gameOverReason, 1);
         assert.equal(gameStatus.causingSide, 2);
-        assert.equal((await round.state.call()).toNumber(), 2 /* round.State.Ended */);
+        assert.equal((await round.getState.call()).toNumber(), 2 /* round.State.Ended */);
 
         let p1a = await web3.eth.getBalance(player1);
         let p2a = await web3.eth.getBalance(player2);

@@ -4,24 +4,12 @@ import './base/Owned.sol';
 import './GameEvent.sol';
 import './Game.sol';
 
-contract GameRound is Owned {
-    GameEvent public gameEvent;
-    Game public game;
-
+library GameRoundLib {
     enum State {
         Preparing,
         InProgress,
         Ended
     }
-    State public state;
-
-    /**
-     * @title Maximum size of bet any player could take
-     * Any minus value means there is no maximum size of bets
-     *
-     * FIXME to be implemented
-     */
-    int public maximumBetSizeForAll;
 
     struct PlayerData {
         address player;
@@ -30,57 +18,82 @@ contract GameRound is Owned {
         bool allowTakeOver;
         uint takeOverFee;
     }
-    mapping(uint => PlayerData) public players;
 
-    /**
-     * Move data layout:
-     * bits[0:11] - game specific move data
-     * bits[12:15] - side
-     */
-    uint16[] public moves;
+    struct GameRoundData {
+        GameEvent gameEvent;
+        Game game;
 
-    //
-    // Game data syncs
-    //
-    uint public syncedTurn;
+        State state;
 
-    bytes public gameData;
+        /**
+         * @title Maximum size of bet any player could take
+         * Any minus value means there is no maximum size of bets
+         *
+         * FIXME to be implemented
+         */
+        int maximumBetSizeForAll;
 
-    uint public gameOverReason;
+        mapping(uint => PlayerData) players;
 
-    uint public causingSide;
+        /**
+         * Move data layout:
+         * bits[0:11] - game specific move data
+         * bits[12:15] - side
+         */
+        uint16[] moves;
 
-    //
-    // Configuration functions, only used by creator
-    //
-    constructor(
-        GameEvent gameEvent_,
-        Game game_,
-        int maximumBetSizeForAll_) public {
-        gameEvent = gameEvent_;
-        game = game_;
-        maximumBetSizeForAll = maximumBetSizeForAll_;
-        state = State.Preparing;
+        //
+        // Game data syncs
+        //
+        uint syncedTurn;
 
-        uint initialDataLength = game.initialData().length;
-        gameData = new bytes(initialDataLength);
-        for (uint i = 0; i < initialDataLength; i++) {
-            gameData[i] = game.initialData()[i];
+        bytes gameData;
+
+        uint gameOverReason;
+
+        uint causingSide;
+    }
+
+    function getMove(GameRoundData storage self, uint turn) external view returns (uint8 side, uint16 data) {
+        require(self.state == State.InProgress, "Game is not in progress");
+        require(turn < self.moves.length, "No such turn data");
+        uint16 move = self.moves[turn];
+        side = (uint8)(move >> 12);
+        data = move & 0xFFF;
+    }
+
+    function initialize(
+        GameRoundData storage self,
+        GameEvent gameEvent,
+        Game game,
+        int maximumBetSizeForAll) external {
+        self.gameEvent = gameEvent;
+        self.game = game;
+        self.maximumBetSizeForAll = maximumBetSizeForAll;
+        self.state = State.Preparing;
+
+        if (game != address(0)) {
+            uint initialDataLength = game.initialData().length;
+            self.gameData = new bytes(initialDataLength);
+            for (uint i = 0; i < initialDataLength; i++) {
+                self.gameData[i] = game.initialData()[i];
+            }
         }
     }
 
     function setPlayer(
+        GameRoundData storage self,
         uint side,
         address player,
         uint maximumBetSize,
-        uint currentBetSize) public {
-        require(state == State.Preparing, "Game has already started");
+        uint currentBetSize) external {
+        require(self.state == State.Preparing, "Game has already started");
         require(side > 0, "Side has to be greater than 0");
-        PlayerData storage playerData = players[side];
+        PlayerData storage playerData = self.players[side];
         require(playerData.player == 0, "Player has already been set");
-        uint grantedAllowance = gameEvent.getGrantedAllowance(player);
+        uint grantedAllowance = self.gameEvent.getGrantedAllowance(player);
         require(grantedAllowance >= maximumBetSize, "Not enough allowance granted");
-        require(gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
+        require(self.gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
         playerData.player = player;
         playerData.maximumBetSize = maximumBetSize;
         playerData.currentBetSize = currentBetSize;
@@ -88,32 +101,25 @@ contract GameRound is Owned {
         playerData.takeOverFee = 0;
     }
 
-    function start() public onlyOwner {
-        require(state == State.Preparing, "Game has already started");
-        state = State.InProgress;
-        emit AIWar_GameRound_Started(gameEvent, game, this);
-    }
-
-    function getMove(uint turn) public view returns (uint8 side, uint16 data) {
-        require(state == State.InProgress, "Game is not in progress");
-        require(turn < moves.length, "No such turn data");
-        uint16 move = moves[turn];
-        side = (uint8)(move >> 12);
-        data = move & 0xFFF;
+    function start(GameRoundData storage self) external {
+        require(self.state == State.Preparing, "Game has already started");
+        self.state = State.InProgress;
+        emit AIWar_GameRound_Started(self.gameEvent, self.game, this);
     }
 
     function makeMove(
+        GameRoundData storage self,
         uint side, uint16 data,
         uint maximumBetSize,
         uint currentBetSize,
         bool allowTakeOver,
-        uint takeOverFee) public {
-        require(state == State.InProgress, "Game is not in progress");
-        GameRound.PlayerData storage playerData = players[side];
+        uint takeOverFee) external {
+        require(self.state == State.InProgress, "Game is not in progress");
+        PlayerData storage playerData = self.players[side];
         require(playerData.player != address(0), "Invalid side");
         require(playerData.player == msg.sender, "Unauthorized player");
         // validate betting parameters
-        if (maximumBetSize != playerData.maximumBetSize) {
+        if (playerData.maximumBetSize != maximumBetSize) {
             playerData.maximumBetSize = maximumBetSize;
         }
         if (playerData.currentBetSize != currentBetSize) {
@@ -126,22 +132,24 @@ contract GameRound is Owned {
             playerData.takeOverFee = takeOverFee;
         }
         // create the move
-        moves.push((uint16(side) << 12) | (data & 0xFFF));
+        self.moves.push((uint16(side) << 12) | (data & 0xFFF));
     }
 
     function takeOver(
+        GameRoundData storage self,
         uint side,
         uint maximumBetSize,
         uint currentBetSize,
         bool allowTakeOver,
-        uint takeOverFee) public {
+        uint takeOverFee) external {
         require(side > 0, "Side has to be greater than 0");
-        require(state == State.InProgress, "Game is not in progress");
+        require(self.state == State.InProgress, "Game is not in progress");
         require(maximumBetSize >= currentBetSize, "maximumBetSize should not be smaller than currentBetSize");
-        PlayerData storage playerData = players[side];
+        PlayerData storage playerData = self.players[side];
 
         // FIXME
-        //require(gameEvent.validatePlayer(msg.sender, maximumBetSize), "player cannot be validated");
+        // validate take over conditions
+        // require(gameEvent.validatePlayer(msg.sender, maximumBetSize), "player cannot be validated");
 
         playerData.player = msg.sender;
         playerData.maximumBetSize = maximumBetSize;
@@ -150,47 +158,125 @@ contract GameRound is Owned {
         playerData.takeOverFee = takeOverFee;
     }
 
-    /*function reportIllegalMove() public {
-        //
-    }*/
-
-    function syncGameData(uint16 untilTurn) public {
-        require(untilTurn > syncedTurn, "Already synced to the specified turn");
-        require(untilTurn <= moves.length, "Not enough move data to sync");
+    function syncGameData(GameRoundData storage self, uint16 untilTurn) external {
+        require(untilTurn > self.syncedTurn, "Already synced to the specified turn");
+        require(untilTurn <= self.moves.length, "Not enough move data to sync");
         (bytes memory newData,
-        uint syncedTurn_,
-        uint gameOverReason_,
-        uint causingSide_) = game.syncGameData(
-            gameData, moves,
-            syncedTurn, untilTurn);
-        uint dataLength = gameData.length;
+        uint syncedTurn,
+        uint gameOverReason,
+        uint causingSide) = self.game.syncGameData(
+            self.gameData, self.moves,
+            self.syncedTurn, untilTurn);
+        uint dataLength = self.gameData.length;
         for (uint i = 0; i < dataLength; ++i) {
-            if (newData[i] != gameData[i])
-                gameData[i] = newData[i];
+            if (newData[i] != self.gameData[i]) {
+                self.gameData[i] = newData[i];
+            }
         }
-        if (syncedTurn != syncedTurn_) {
-            syncedTurn = syncedTurn_;
-            if (gameOverReason != gameOverReason_) {
-                gameOverReason = gameOverReason_;
-                causingSide = causingSide_;
-                state = State.Ended;
-                emit AIWar_GameRound_Ended(gameEvent, game, this);
+        if (self.syncedTurn != syncedTurn) {
+            self.syncedTurn = syncedTurn;
+            if (self.gameOverReason != gameOverReason) {
+                self.gameOverReason = gameOverReason;
+                self.causingSide = causingSide;
+                self.state = State.Ended;
+                emit AIWar_GameRound_Ended(self.gameEvent, self.game, this);
             }
         }
     }
 
-    function settlePayout() external {
-        require(state == State.Ended, "Game has not ended yet");
-        if (gameOverReason == uint(Game.GameOverReason.HAS_WINNER)) {
-            address winner = players[causingSide].player;
-            address loser = players[causingSide == 1 ? 2 : 1].player;
-            uint lostAmount = gameEvent.getLockedBalance(loser);
-            gameEvent.transferLockedBalance(loser, winner, lostAmount);
+    function settlePayout(GameRoundData storage self) external {
+        require(self.state == State.Ended, "Game has not ended yet");
+        if (self.gameOverReason == uint(Game.GameOverReason.HAS_WINNER)) {
+            address winner = self.players[self.causingSide].player;
+            address loser = self.players[self.causingSide == 1 ? 2 : 1].player;
+            uint lostAmount = self.gameEvent.getLockedBalance(loser);
+            self.gameEvent.transferLockedBalance(loser, winner, lostAmount);
         }
-        gameEvent.unlockAllBalance(players[1].player);
-        gameEvent.unlockAllBalance(players[2].player);
+        self.gameEvent.unlockAllBalance(self.players[1].player);
+        self.gameEvent.unlockAllBalance(self.players[2].player);
     }
 
     event AIWar_GameRound_Started(address indexed gameEvent, address indexed game, address round);
+
     event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game, address round);
+}
+
+contract GameRound is Owned {
+    using GameRoundLib for GameRoundLib.GameRoundData;
+
+    GameRoundLib.GameRoundData private self;
+
+    function getGameEvent() external view returns (GameEvent) { return self.gameEvent; }
+    function getGame() external view returns (Game) { return self.game; }
+    function getState() external view returns (GameRoundLib.State) { return self.state; }
+    function getMaximumBetSizeForAll() external view returns (int) { return self.maximumBetSizeForAll; }
+    function getMove(uint turn) external view returns (uint8 side, uint16 data) {
+        (side, data) = GameRoundLib.getMove(self, turn);
+    }
+    function getSyncedTurn() external view returns (uint) { return self.syncedTurn; }
+    function getGameData() external view returns (bytes) { return self.gameData; }
+    function getGameOverReason() external view returns (uint) { return self.gameOverReason; }
+    function getCausingSide() external view returns (uint) { return self.causingSide; }
+
+    //
+    // Configuration functions, only used by creator
+    //
+    constructor(
+        GameEvent gameEvent,
+        Game game,
+        int maximumBetSizeForAll) public {
+        self.initialize(gameEvent, game, maximumBetSizeForAll);
+    }
+
+    function setPlayer(
+        uint side,
+        address player,
+        uint maximumBetSize,
+        uint currentBetSize) external onlyOwner {
+        self.setPlayer(side, player, maximumBetSize, currentBetSize);
+    }
+
+    function start() external onlyOwner {
+        self.start();
+    }
+
+    function makeMove(
+        uint side, uint16 data,
+        uint maximumBetSize,
+        uint currentBetSize,
+        bool allowTakeOver,
+        uint takeOverFee) external {
+        self.makeMove(
+            side, data,
+            maximumBetSize,
+            currentBetSize,
+            allowTakeOver,
+            takeOverFee);
+    }
+
+    function takeOver(
+        uint side,
+        uint maximumBetSize,
+        uint currentBetSize,
+        bool allowTakeOver,
+        uint takeOverFee) external {
+        self.takeOver(
+            side,
+            maximumBetSize,
+            currentBetSize,
+            allowTakeOver,
+            takeOverFee);
+    }
+
+    /*function reportIllegalMove() public {
+        //
+    }*/
+
+    function syncGameData(uint16 untilTurn) external {
+        self.syncGameData(untilTurn);
+    }
+
+    function settlePayout() external {
+        self.settlePayout();
+    }
 }
