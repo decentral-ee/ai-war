@@ -1,6 +1,7 @@
 const OpenEtherbetGameEventContract = artifacts.require("OpenEtherbetGameEvent");
 const GameRoundLib = artifacts.require("GameRoundLib");
 const GameRoundContract = artifacts.require("GameRound");
+const AIWarPlatformContract = artifacts.require("AIWarPlatform");
 const TicTacToeGameContract = artifacts.require("TicTacToeGame");
 const TicTacToeGame = require('../sdk/games/tictactoe_game');
 
@@ -8,10 +9,8 @@ contract('GameRound test cases', function(accounts) {
     const MAXIMUM_BET_SIZE_FOR_ALL = web3.toWei(100, "ether");
     const INITIAL_MAXIMUM_BET_SIZE = web3.toWei(10, "ether");
     const INITIAL_BET_SIZE = 1;
-    let gameRoundLib;
-    let gameEvent;
+    let platform;
     let game;
-    let round;
     let player1 = accounts[0];
     let player2 = accounts[1];
     let creator = accounts[2];
@@ -76,12 +75,19 @@ contract('GameRound test cases', function(accounts) {
     }
 
     async function setupTypicalGameRound() {
-        gameEvent = await createContract('OpenEtherbetGameEventContract Created', OpenEtherbetGameEventContract,
+        let gameEvent = await createContract('OpenEtherbetGameEventContract Created', OpenEtherbetGameEventContract,
             { from: creator });
+        await sendTransaction("platform.registerGameEvent", platform.registerGameEvent,
+            gameEvent.address, { from: creator });
 
-        round = await createContract('GameRound created', GameRoundContract,
-        gameEvent.address, game.address, MAXIMUM_BET_SIZE_FOR_ALL,
-            { from: creator });
+        let roundAddress = (await sendTransaction('platform.createGameRound', platform.createGameRound,
+            gameEvent.address, game.address,
+            { from: creator })).logs[0].args.gameRound;
+        assert.notEmpty(roundAddress);
+        let round = GameRoundContract.at(roundAddress);
+
+        assert.equal((await platform.getGameRoundStartedByEvent(gameEvent.address)).toNumber(), 0);
+        assert.equal((await platform.getGameRoundEndedByEvent(gameEvent.address)).toNumber(), 0);
 
         await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
             { from: player1, value: INITIAL_MAXIMUM_BET_SIZE });
@@ -91,7 +97,7 @@ contract('GameRound test cases', function(accounts) {
         await sendTransaction('round.setPlayer 1', round.setPlayer,
             1, player1, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, { from: creator });
 
-        await sendTransaction('gameEvent.deposit player1', gameEvent.deposit,
+        await sendTransaction('gameEvent.deposit player2', gameEvent.deposit,
             { from: player2, value: INITIAL_MAXIMUM_BET_SIZE });
         await sendTransaction('gameEvent.grantAllowance player2', gameEvent.grantAllowance,
             round.address, INITIAL_MAXIMUM_BET_SIZE,
@@ -100,20 +106,25 @@ contract('GameRound test cases', function(accounts) {
             2, player2, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, { from: creator });
 
         await sendTransaction('round.start', round.start, { from: creator });
+
+        assert.equal((await platform.getGameRoundStartedByEvent(gameEvent.address)).toNumber(), 1);
+        assert.equal((await platform.getGameRoundEndedByEvent(gameEvent.address)).toNumber(), 0);
+
+        return { gameEvent, round };
     }
 
     before(async function () {
-        game = await createContract("TicTacToeGame created",
-            TicTacToeGameContract,
-            { from: creator });
-        gameRoundLib = await createContract("GameRoundLib created",
-            GameRoundLib,
-            { from: creator });
-        GameRoundContract.link('GameRoundLib', gameRoundLib.address);
+        platform = await AIWarPlatformContract.deployed();
+        game = await TicTacToeGameContract.deployed();
+    })
+
+    after(async function () {
+        console.log(`Total started ${(await platform.getTotalGameRoundStarted()).toNumber()} rounds`);
+        console.log(`Total ended ${(await platform.getTotalGameRoundEnded()).toNumber()} rounds`);
     })
 
     beforeEach(async function () {
-        console.log(`#### Starting test case: ${this.currentTest.title}`);
+        console.log(`\n#### Starting test case: ${this.currentTest.title}`);
         // reset gas counter
         gasCounter = {};
     })
@@ -123,14 +134,19 @@ contract('GameRound test cases', function(accounts) {
         console.log(`creator used gas ${gasCounter[creator]}`);
         console.log(`player1 used gas ${gasCounter[player1]}`);
         console.log(`player2 used gas ${gasCounter[player2]}`);
-        console.log(`#### Test case ended: ${this.currentTest.title}`);
+        console.log(`# Game stats summary:`);
+        console.log(`Game started ${(await platform.getGameRoundStartedByGame(game.address)).toNumber()} rounds`);
+        console.log(`Game ended ${(await platform.getGameRoundEndedByGame(game.address)).toNumber()} rounds`);
+        console.log(`#### Test case ended: ${this.currentTest.title}\n`);
     })
 
     it("a typical tictactoe game round", async function() {
+        let setup = await setupTypicalGameRound();
+        let gameEvent = setup.gameEvent;
+        let round = setup.round;
+
         let move;
         let gameData;
-
-        await setupTypicalGameRound();
 
         let moveData1 = TicTacToeGame.createMoveData(1, 1);
         await sendTransaction(`round.makeMove 1 ${decodeMoveData(moveData1)}`, round.makeMove,
@@ -201,5 +217,15 @@ contract('GameRound test cases', function(accounts) {
         console.log(`player 2 withdrew ${p2Withdrew}`);
         assert.isTrue(p1Withdrew < 0 && p1Withdrew > -0.1);
         assert.isTrue(p2Withdrew > 19.9 && p2Withdrew < 20.0);
+
+        assert.equal((await platform.getGameRoundStartedByEvent(gameEvent.address)).toNumber(), 1);
+        assert.equal((await platform.getGameRoundEndedByEvent(gameEvent.address)).toNumber(), 1);
     })
+
+    it("an unfinished tictactoe game round", async function() {
+        let setup = await setupTypicalGameRound();
+        let gameEvent = setup.gameEvent;
+        assert.equal((await platform.getGameRoundStartedByEvent(gameEvent.address)).toNumber(), 1);
+        assert.equal((await platform.getGameRoundEndedByEvent(gameEvent.address)).toNumber(), 0);
+    });
 });

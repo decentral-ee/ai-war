@@ -4,6 +4,12 @@ import './base/Owned.sol';
 import './GameEvent.sol';
 import './Game.sol';
 
+
+contract GameRoundCallback {
+    function gameRoundStarted(address gameEvent, address game, address gameRound) external;
+    function gameRoundEnded(address gameEvent, address game, address gameRound) external;
+}
+
 library GameRoundLib {
     enum State {
         Preparing,
@@ -20,18 +26,11 @@ library GameRoundLib {
     }
 
     struct GameRoundData {
+        GameRoundCallback cb;
         GameEvent gameEvent;
         Game game;
 
         State state;
-
-        /**
-         * @title Maximum size of bet any player could take
-         * Any minus value means there is no maximum size of bets
-         *
-         * FIXME to be implemented
-         */
-        int maximumBetSizeForAll;
 
         mapping(uint => PlayerData) players;
 
@@ -62,14 +61,14 @@ library GameRoundLib {
         data = move & 0xFFF;
     }
 
-    function initialize(
+    function create(
         GameRoundData storage self,
+            GameRoundCallback cb,
         GameEvent gameEvent,
-        Game game,
-        int maximumBetSizeForAll) external {
+        Game game) external {
+        self.cb = cb;
         self.gameEvent = gameEvent;
         self.game = game;
-        self.maximumBetSizeForAll = maximumBetSizeForAll;
         self.state = State.Preparing;
 
         if (game != address(0)) {
@@ -79,6 +78,8 @@ library GameRoundLib {
                 self.gameData[i] = game.initialData()[i];
             }
         }
+
+        emit AIWar_GameRound_Created(gameEvent, game, this);
     }
 
     function setPlayer(
@@ -104,6 +105,7 @@ library GameRoundLib {
     function start(GameRoundData storage self) external {
         require(self.state == State.Preparing, "Game has already started");
         self.state = State.InProgress;
+        self.cb.gameRoundStarted(self.gameEvent, self.game, this);
         emit AIWar_GameRound_Started(self.gameEvent, self.game, this);
     }
 
@@ -179,6 +181,7 @@ library GameRoundLib {
                 self.gameOverReason = gameOverReason;
                 self.causingSide = causingSide;
                 self.state = State.Ended;
+                self.cb.gameRoundEnded(self.gameEvent, self.game, this);
                 emit AIWar_GameRound_Ended(self.gameEvent, self.game, this);
             }
         }
@@ -196,9 +199,11 @@ library GameRoundLib {
         self.gameEvent.unlockAllBalance(self.players[2].player);
     }
 
-    event AIWar_GameRound_Started(address indexed gameEvent, address indexed game, address round);
+    event AIWar_GameRound_Created(address indexed gameEvent, address indexed game, address gameRound);
 
-    event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game, address round);
+    event AIWar_GameRound_Started(address indexed gameEvent, address indexed game, address gameRound);
+
+    event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game, address gameRound);
 }
 
 contract GameRound is Owned {
@@ -209,7 +214,6 @@ contract GameRound is Owned {
     function getGameEvent() external view returns (GameEvent) { return self.gameEvent; }
     function getGame() external view returns (Game) { return self.game; }
     function getState() external view returns (GameRoundLib.State) { return self.state; }
-    function getMaximumBetSizeForAll() external view returns (int) { return self.maximumBetSizeForAll; }
     function getMove(uint turn) external view returns (uint8 side, uint16 data) {
         (side, data) = GameRoundLib.getMove(self, turn);
     }
@@ -221,11 +225,8 @@ contract GameRound is Owned {
     //
     // Configuration functions, only used by creator
     //
-    constructor(
-        GameEvent gameEvent,
-        Game game,
-        int maximumBetSizeForAll) public {
-        self.initialize(gameEvent, game, maximumBetSizeForAll);
+    constructor(GameRoundCallback cb, GameEvent gameEvent, Game game) public {
+        self.create(cb, gameEvent, game);
     }
 
     function setPlayer(

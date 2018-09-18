@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import truffleContract from "truffle-contract";
 
-class GameRule extends Component {
+class Game extends Component {
     render() {
         return (
             <div>
@@ -11,4 +11,4 @@ class GameRule extends Component {
     }
 }
 
-export default GameRule;
+export default Game;

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import Home from './Home';
-import GameRule from './GameRule';
+import Game from './Game';
 import GameRound from './GameRound';
 import { BrowserRouter as Router, Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
@@ -40,7 +40,7 @@ class App extends Component {
                     <Link to="/">Home</Link>
                     <Switch>
                         <Route exact path="/" render={(props) => <Home {...props} appState={this.state}/>}/>
-                        <Route path="/g/:gameRuleAddress" render={(props) => <GameRule {...props} appState={this.state}/>}/>
+                        <Route path="/g/:gameRuleAddress" render={(props) => <Game {...props} appState={this.state}/>}/>
                         <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} appState={this.state}/>}/>
                         <Redirect from="/" to="/" />
                     </Switch>
