@@ -4,6 +4,13 @@ function createMoveData(x, y) {
     return (y << 2) | x;
 }
 
+function parseMoveData(data) {
+    const d = data.toNumber();
+    const x = data & 3;
+    const y = data >> 2;
+    return {x, y};
+}
+
 function parseGameData(gameData) {
     let board = {};
     for (let y = 0; y < 3; ++y) {
@@ -36,6 +43,7 @@ function printGameData(gameData) {
 
 module.exports = {
     createMoveData: createMoveData,
+    parseMoveData: parseMoveData,
     parseGameData: parseGameData,
     printGameData: printGameData
 }

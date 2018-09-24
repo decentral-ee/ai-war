@@ -13,6 +13,7 @@ contract GameRoundCallback {
 library GameRoundLib {
     enum State {
         Preparing,
+        Ready,
         InProgress,
         Ended
     }
@@ -32,7 +33,10 @@ library GameRoundLib {
 
         State state;
 
+        mapping(uint => address) invitations;
+        uint expectedNumberOfPlayers;
         mapping(uint => PlayerData) players;
+        uint joinedPlayers;
 
         /**
          * Move data layout:
@@ -54,7 +58,6 @@ library GameRoundLib {
     }
 
     function getMove(GameRoundData storage self, uint turn) external view returns (uint8 side, uint16 data) {
-        require(self.state == State.InProgress, "Game is not in progress");
         require(turn < self.moves.length, "No such turn data");
         uint16 move = self.moves[turn];
         side = (uint8)(move >> 12);
@@ -63,36 +66,71 @@ library GameRoundLib {
 
     function create(
         GameRoundData storage self,
-            GameRoundCallback cb,
+        GameRoundCallback cb,
         GameEvent gameEvent,
-        Game game) external {
+        Game game,
+        uint expectedNumberOfPlayers) external {
         self.cb = cb;
         self.gameEvent = gameEvent;
         self.game = game;
         self.state = State.Preparing;
 
-        if (game != address(0)) {
-            uint initialDataLength = game.initialData().length;
-            self.gameData = new bytes(initialDataLength);
-            for (uint i = 0; i < initialDataLength; i++) {
-                self.gameData[i] = game.initialData()[i];
-            }
+        self.expectedNumberOfPlayers = expectedNumberOfPlayers;
+        require(self.expectedNumberOfPlayers >= game.minimalNumberOfPlayers()
+            && self.expectedNumberOfPlayers <= game.maximumNumberOfPlayers(),
+            "Invalid number of players expected");
+
+        uint initialDataLength = game.initialData().length;
+        self.gameData = new bytes(initialDataLength);
+        for (uint i = 0; i < initialDataLength; i++) {
+            self.gameData[i] = game.initialData()[i];
         }
 
-        emit AIWar_GameRound_Created(gameEvent, game, this);
+        emit AIWar_GameRound_Created(gameEvent, game);
     }
 
-    function setPlayer(
+    event AIWar_GameRound_Created(address indexed gameEvent, address indexed game);
+
+    event AIWar_GameRound_Ready(address indexed gameEvent, address indexed game);
+
+    event AIWar_GameRound_Started(address indexed gameEvent, address indexed game);
+
+    event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game);
+
+    function invitePlayer(
         GameRoundData storage self,
         uint side,
-        address player,
+        address player) external {
+        require(self.state == State.Preparing, "Game has already been configured");
+        require(self.invitations[side] == address(0), "Player has already been invited");
+        require(side <= self.expectedNumberOfPlayers, "Expecting less players");
+        self.invitations[side] = player;
+    }
+
+    function ready(GameRoundData storage self) external {
+        require(self.state == State.Preparing, "Game has already been configured");
+        self.state = State.Ready;
+        emit AIWar_GameRound_Ready(self.gameEvent, self.game);
+    }
+
+    function acceptInvitation(
+        GameRoundData storage self,
+        uint side,
         uint maximumBetSize,
         uint currentBetSize) external {
-        require(self.state == State.Preparing, "Game has already started");
         require(side > 0, "Side has to be greater than 0");
+        require((self.state == State.Ready) || (self.state == State.Preparing), "Game has started");
+        require(side <= self.expectedNumberOfPlayers, "Expecting less players");
+        address invitedPlayer = self.invitations[side];
+        address player = msg.sender;
+        if (invitedPlayer == address(0)) {
+            require(self.state == State.Ready, "Not yet for accepting open invitations");
+        } else {
+            require(player == invitedPlayer, "Not authorized player");
+        }
         PlayerData storage playerData = self.players[side];
         require(playerData.player == 0, "Player has already been set");
-        uint grantedAllowance = self.gameEvent.getGrantedAllowance(player);
+        uint grantedAllowance = self.gameEvent.getGrantedAllowance(this, player);
         require(grantedAllowance >= maximumBetSize, "Not enough allowance granted");
         require(self.gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
         playerData.player = player;
@@ -100,13 +138,13 @@ library GameRoundLib {
         playerData.currentBetSize = currentBetSize;
         playerData.allowTakeOver = false;
         playerData.takeOverFee = 0;
-    }
 
-    function start(GameRoundData storage self) external {
-        require(self.state == State.Preparing, "Game has already started");
-        self.state = State.InProgress;
-        self.cb.gameRoundStarted(self.gameEvent, self.game, this);
-        emit AIWar_GameRound_Started(self.gameEvent, self.game, this);
+        ++self.joinedPlayers;
+        if (self.joinedPlayers == self.expectedNumberOfPlayers) {
+            self.state = State.InProgress;
+            self.cb.gameRoundStarted(self.gameEvent, self.game, this);
+            emit AIWar_GameRound_Started(self.gameEvent, self.game);
+        }
     }
 
     function makeMove(
@@ -182,7 +220,7 @@ library GameRoundLib {
                 self.causingSide = causingSide;
                 self.state = State.Ended;
                 self.cb.gameRoundEnded(self.gameEvent, self.game, this);
-                emit AIWar_GameRound_Ended(self.gameEvent, self.game, this);
+                emit AIWar_GameRound_Ended(self.gameEvent, self.game);
             }
         }
     }
@@ -192,18 +230,12 @@ library GameRoundLib {
         if (self.gameOverReason == uint(Game.GameOverReason.HAS_WINNER)) {
             address winner = self.players[self.causingSide].player;
             address loser = self.players[self.causingSide == 1 ? 2 : 1].player;
-            uint lostAmount = self.gameEvent.getLockedBalance(loser);
+            uint lostAmount = self.gameEvent.getLockedBalance(this, loser);
             self.gameEvent.transferLockedBalance(loser, winner, lostAmount);
         }
         self.gameEvent.unlockAllBalance(self.players[1].player);
         self.gameEvent.unlockAllBalance(self.players[2].player);
     }
-
-    event AIWar_GameRound_Created(address indexed gameEvent, address indexed game, address gameRound);
-
-    event AIWar_GameRound_Started(address indexed gameEvent, address indexed game, address gameRound);
-
-    event AIWar_GameRound_Ended(address indexed gameEvent, address indexed game, address gameRound);
 }
 
 contract GameRound is Owned {
@@ -214,6 +246,8 @@ contract GameRound is Owned {
     function getGameEvent() external view returns (GameEvent) { return self.gameEvent; }
     function getGame() external view returns (Game) { return self.game; }
     function getState() external view returns (GameRoundLib.State) { return self.state; }
+    function getPlayer(uint side) external view returns (address) { return self.players[side].player; }
+    function getNumberOfMoves() external view returns (uint) { return self.moves.length; }
     function getMove(uint turn) external view returns (uint8 side, uint16 data) {
         (side, data) = GameRoundLib.getMove(self, turn);
     }
@@ -225,20 +259,38 @@ contract GameRound is Owned {
     //
     // Configuration functions, only used by creator
     //
-    constructor(GameRoundCallback cb, GameEvent gameEvent, Game game) public {
-        self.create(cb, gameEvent, game);
+    constructor(
+        GameRoundCallback cb,
+        GameEvent gameEvent,
+        Game game,
+        uint expectedNumberOfPlayers) public {
+        self.create(cb, gameEvent, game, expectedNumberOfPlayers);
     }
 
-    function setPlayer(
+    function invitePlayer(
         uint side,
-        address player,
-        uint maximumBetSize,
-        uint currentBetSize) external onlyOwner {
-        self.setPlayer(side, player, maximumBetSize, currentBetSize);
+        address player) external onlyOwner {
+        self.invitePlayer(side, player);
     }
 
-    function start() external onlyOwner {
-        self.start();
+    function ready() external onlyOwner {
+        self.ready();
+    }
+
+    function acceptInvitation(
+        uint side,
+        uint maximumBetSize,
+        uint currentBetSize) external {
+        self.acceptInvitation(side, maximumBetSize, currentBetSize);
+    }
+
+    function selfInviteAndReady(
+        uint creatorSide,
+        uint creatorMaximumBetSize,
+        uint creatorCurrentBetSize) external onlyOwner {
+        self.invitePlayer(creatorSide, msg.sender);
+        self.acceptInvitation(creatorSide, creatorMaximumBetSize, creatorCurrentBetSize);
+        self.ready();
     }
 
     function makeMove(

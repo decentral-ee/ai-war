@@ -1,5 +1,8 @@
 pragma solidity ^0.4.23;
 
+/**
+ * AIWar Game base contract
+ */
 contract Game {
     enum GameOverReason {
         NOT_OVER,
@@ -7,7 +10,13 @@ contract Game {
         TIED
     }
 
+    string public name;
+    string public version;
+
     bytes public initialData;
+    uint public minimalNumberOfPlayers;
+    uint public defaultNumberOfPlayers;
+    uint public maximumNumberOfPlayers;
 
     function decodeGameOverReason(uint gameOverReason) public view returns (string reason);
 

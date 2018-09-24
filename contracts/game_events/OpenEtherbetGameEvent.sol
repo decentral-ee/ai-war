@@ -24,6 +24,10 @@ contract OpenEtherbetGameEvent {
     // player -> grantedAllowance
     mapping(address => uint) totalLockedBalance;
 
+    function getDepositAmount(address player) external view returns (uint) {
+        return deposits[player];
+    }
+
     function grantAllowance(address gameRound, uint newAllowance) external {
         uint existingTotalAllowance = totalGrantedAllowance[msg.sender];
         uint currentAllowance = grantedAllowance[gameRound][msg.sender];
@@ -33,8 +37,12 @@ contract OpenEtherbetGameEvent {
         grantedAllowance[gameRound][msg.sender] = newAllowance;
     }
 
-    function getGrantedAllowance(address player) external view returns (uint) {
-        return grantedAllowance[msg.sender][player];
+    function getGrantedAllowance(address gameRound, address player) external view returns (uint) {
+        return grantedAllowance[gameRound][player];
+    }
+
+    function getTotalGrantedAllowance(address player) external view returns (uint) {
+        return totalGrantedAllowance[player];
     }
 
     function lockBalance(address player, uint balance) external returns (bool) {
@@ -49,23 +57,27 @@ contract OpenEtherbetGameEvent {
         }
     }
 
-    function getLockedBalance(address player) external view returns (uint) {
-        return lockedBalance[msg.sender][player];
+    function getLockedBalance(address gameRound, address player) external view returns (uint) {
+        return lockedBalance[gameRound][player];
+    }
+
+    function getTotalLockedBalance(address player) external view returns (uint) {
+        return totalLockedBalance[player];
     }
 
     function unlockAllBalance(address player) external {
         uint balance = lockedBalance[msg.sender][player];
-        grantedAllowance[msg.sender][player] += balance;
-        totalGrantedAllowance[player] += balance;
+        grantedAllowance[msg.sender][player] = 0;
         totalLockedBalance[player] -= balance;
+        lockedBalance[msg.sender][player] = 0;
     }
 
     function transferLockedBalance(address from, address to, uint balance) external {
         require(balance <= lockedBalance[msg.sender][from], "Not enough locked balance");
-        to.transfer(balance);
         lockedBalance[msg.sender][from] -= balance;
         totalLockedBalance[from] -= balance;
         deposits[from] -= balance;
+        deposits[to] += balance;
     }
 
     function deposit() public payable {

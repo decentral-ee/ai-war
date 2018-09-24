@@ -3,6 +3,7 @@ const GameRoundLib = artifacts.require("GameRoundLib");
 const AIWarPlatform = artifacts.require("AIWarPlatform");
 const GameRound = artifacts.require("GameRound");
 const TicTacToeGame = artifacts.require("TicTacToeGame");
+const OpenEtherbetGameEvent = artifacts.require("OpenEtherbetGameEvent");
 
 
 async function reportGasUsageOfContractCreation(contract) {
@@ -20,6 +21,10 @@ module.exports = function(deployer) {
 
         let platform = await deployer.deploy(AIWarPlatform);
         await reportGasUsageOfContractCreation(platform);
+
+        let openEtherbetGameEvent = await deployer.deploy(OpenEtherbetGameEvent);
+        await reportGasUsageOfContractCreation(openEtherbetGameEvent);
+        await platform.registerGameEvent(openEtherbetGameEvent.address);
 
         // TicTacToeGame
         let tictactoeGame = await deployer.deploy(TicTacToeGame);

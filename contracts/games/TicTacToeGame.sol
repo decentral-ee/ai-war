@@ -25,7 +25,10 @@ contract TicTacToeGame is Game {
     uint public constant GAME_DATA_LENGTH = 3;
 
     constructor() public {
+        name = "TicTacToe";
+        version = "0.0.1";
         initialData = new bytes(GAME_DATA_LENGTH);
+        minimalNumberOfPlayers = defaultNumberOfPlayers = maximumNumberOfPlayers = 2;
     }
 
     /**
