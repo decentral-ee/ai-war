@@ -1,0 +1,13 @@
+{
+  "name": "ai-war-core",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {},
+  "scripts": {
+    "build": "truffle compile",
+    "truffle": "truffle --network ${NETWORK:-local}"
+  },
+  "dependencies": {
+    "truffle": "^4.1.14"
+  }
+}
