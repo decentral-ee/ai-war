@@ -3,7 +3,7 @@ import truffleContract from "truffle-contract";
 import Web3 from "web3";
 
 const BLOCK_RANGE = 1000;
-const MAXIMUM_BLOCK_HISTORY = 1000000;
+const MAXIMUM_BLOCK_HISTORY = 10000;
 
 class AppComponent extends Component {
     getTruffleContract(contractJson) {
