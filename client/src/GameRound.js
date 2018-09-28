@@ -33,7 +33,8 @@ class GameRound extends AppComponent {
         const player = this.props.appState.accounts[0];
         const roundState = (await this.gameRound.getState.call()).toNumber();
         const isRoundOwner = (await this.gameRound.owner.call()) === this.props.appState.accounts[0];
-        const grantedAllowance = web3.utils.fromWei(await this.gameEvent.getGrantedAllowance.call(this.state.gameRoundAddress, player), "ether");
+        const grantedAllowanceInWei = await this.gameEvent.getGrantedAllowance.call(this.state.gameRoundAddress, player);
+        const grantedAllowance = web3.utils.fromWei(grantedAllowanceInWei.toString(), "ether");
         this.setState({ roundState, grantedAllowance, isRoundOwner });
     }
 

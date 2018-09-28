@@ -47,10 +47,10 @@ class App extends Component {
             OpenEtherbetGameEvent.setProvider(web3.currentProvider);
             const gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
 
-            const gameCredit = web3.utils.fromWei(await gameEvent.getDepositAmount.call(accounts[0]), 'ether');
             // Set web3, accounts, and contract to the state, and then proceed with an
             // example of interacting with the contract's methods.
-            this.setState({ web3, accounts, platform, gameEvent, gameCredit });
+            this.setState({ web3, accounts, platform, gameEvent });
+            this.refreshDepositAmount();
         } catch (error) {
             console.error(error);
         }
@@ -67,10 +67,11 @@ class App extends Component {
     }
 
     async refreshDepositAmount(e) {
-        e.preventDefault();
+        if (e) e.preventDefault();
         const state = this.state;
         const web3 = state.web3;
-        const gameCredit = web3.utils.fromWei(await state.gameEvent.getDepositAmount.call(state.accounts[0]), 'ether');
+        const gameCreditInWei = await state.gameEvent.getDepositAmount.call(state.accounts[0]);
+        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
         this.setState({ gameCredit });
     }
 
