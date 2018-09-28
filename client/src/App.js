@@ -5,6 +5,7 @@ import GameRound from './GameRound';
 import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 
+import Deployments from "./sdk/deployments.json"
 import AIWarPlatformContract from "./contracts/AIWarPlatform.json";
 import OpenEtherbetGameEventContract from "./contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
@@ -30,17 +31,21 @@ class App extends Component {
         try {
             // Get network provider and web3 instance.
             const web3 = await getWeb3();
+            const networkId = await web3.eth.net.getId();
+            const deployments = Deployments.networks[networkId];
+            if (!deployments) throw new Error(`Contracts not deployed to the network ${networkId}`);
+            console.log(`Deployed contracts:`, JSON.stringify(deployments));
 
             // Use web3 to get the user's accounts.
             const accounts = await web3.eth.getAccounts();
 
             const AIWarPlatform = truffleContract(AIWarPlatformContract);
             AIWarPlatform.setProvider(web3.currentProvider);
-            const platform = await AIWarPlatform.deployed();
+            const platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
 
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
             OpenEtherbetGameEvent.setProvider(web3.currentProvider);
-            const gameEvent = await OpenEtherbetGameEvent.deployed();
+            const gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
 
             const gameCredit = web3.utils.fromWei(await gameEvent.getDepositAmount.call(accounts[0]), 'ether');
             // Set web3, accounts, and contract to the state, and then proceed with an
