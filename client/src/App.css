@@ -1,3 +1,110 @@
+/*
+  from light to dark
+    #efbbff
+    #d896ff
+    #673ab7 (wallet bg-color)
+    #5d299c (used for inputs in wallet)
+    #5d299c (used for buttons in wallet)
+    #48005e (app bg-color)
+*/
+@import url('https://fonts.googleapis.com/css?family=Lato|Righteous|Roboto');
+body{
+  background-color: #48005e;
+  color:#ffffff;
+  font-family: "Roboto", sans-serif !important;
+}
+
+.Logo{
+}
+.Logo img{
+  height:100%;
+  width:auto;
+  max-width:100%;
+}
+
+@media (min-width: 576px) {
+    html { font-size: 1.25rem; }
+}
+@media (min-width: 768px) {
+    html { font-size: 1.5rem; }
+}
+@media (min-width: 992px) {
+}
+
 .App {
   text-align: center;
+}
+.gameList i{
+  padding:5px;
+  font-size: 2em;
+}
+
+a {
+  color: #ffffff;
+}
+a:focus, a:hover{
+  color: #dddddd;
+  text-decoration: none;
+}
+.btn {
+    padding: 8px 12px;
+    border: 0 none;
+    font-weight: 900;
+    letter-spacing: 1px;
+    border-radius:10px;
+}
+
+.btn:focus, .btn:active:focus, .btn.active:focus {
+    outline: 0 none;
+}
+
+.btn-primary {
+    background: #eeeeee;
+    color: #111111;
+}
+.btn-default {
+  margin:3px;
+}
+
+.btn:disabled{
+  background: #cccccc;
+  color: #222222;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-default:hover, .btn-default:focus, .btn-primary.active, .open > .dropdown-toggle.btn-primary {
+    background: #dddddd;
+    color: #000000;
+}
+
+/* this little hack changes the chevron from up to down when the menu is expanded*/
+.myChevron::before{
+  content: "\f139";
+}
+[aria-expanded="true"] .myChevron::before{
+  content: "\f13a";
+}
+
+/* wallet styling  */
+.wallet{
+  background-color: #673ab7;
+  color:#ffffff;
+}
+.wallet input{
+  border-radius:0;
+  background-color:#5d299c;
+  color:#dddddd;
+  border:none;
+}
+.wallet button{
+  border-radius:0;
+  background-color:#581d8b;
+  color:#ffffff;
+  font-weight:400;
+}
+.wallet .section h6, .wallet .section h5{
+  line-height:0.7;
+} 
+.wallet button:focus, .wallet button:hover{
+  background-color:#dddddd;
+  color:#581d8b;
 }

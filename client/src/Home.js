@@ -3,6 +3,29 @@ import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
 import GameContract from "./contracts/Game.json";
 
+function GameIcon(props) {
+  if (props === "TicTacToe"){
+    return (
+      <i class="fas fa-hashtag align-middle mr-2"></i>
+    );
+  };
+  if (props === "R-P-S"){
+    return (
+      <i class="far fa-hand-scissors align-middle mr-2"></i>
+    );
+  };
+  if (props === "Gomoku"){
+    return (
+      <i class="fas fa-neuter align-middle mr-2"></i>
+    );
+  };
+  if (props === "Chess"){
+    return (
+      <i class="fas fa-chess align-middle mr-2"></i>
+    );
+  };
+}
+
 class Home extends AppComponent {
     state = { gameList: [] };
 
@@ -24,21 +47,37 @@ class Home extends AppComponent {
             }
         }));
         gameList = gameList.filter(g => g !== null);
+        gameList.push({
+            address: 0x0,
+            name: "Gomoku"
+        }, {
+            address: 0x0,
+            name: "Chess"
+        }, {
+            address: 0x0,
+            name: "R-P-S"
+        });
         this.setState({ gameList });
     }
 
     render() {
         function GameSummary(props) {
-            return (<div>
-                <Link to={"/g/" + props.address}>{props.name}</Link>
+            return (<div class={"col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1 " + props.name}>
+                <Link to={(props.address !== 0x0) ? "/g/" + props.address : "" }>
+                    <button type="button" class="btn btn-primary w-100" disabled={(props.address != 0x0) ? false : true}>
+                    {GameIcon(props.name)}
+                    <h3 class="d-inline d-md-block align-middle">{props.name}</h3>
+                  </button>
+                </Link>
             </div>);
         }
 
         const gameList = this.state.gameList.map(i => <GameSummary key={i} address={i.address} name={i.name}/>);
         return (
             <div>
-                <h2>Game List</h2>
+                <div class="gameList row">
                 {gameList}
+                </div>
             </div>
         );
     }

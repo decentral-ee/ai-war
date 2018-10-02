@@ -19,12 +19,14 @@ class App extends Component {
         platform: null,
         gameEvent: null,
         gameCredit: 0,
+        newDeposit: ""
     };
 
     constructor(props) {
         super(props);
         this.depositEther = this.depositEther.bind(this);
         this.refreshDepositAmount = this.refreshDepositAmount.bind(this);
+        this.handleNewDeposit = this.handleNewDeposit.bind(this);
     }
 
     async componentDidMount() {
@@ -55,14 +57,21 @@ class App extends Component {
             console.error(error);
         }
     }
-
+    handleNewDeposit(e){
+      const val = e.target.value;
+      if (/^(\d+(\.\d{1,18})?)|^(?![\s\S])$/.test(val)) {
+        this.setState({
+          newDeposit: val
+        });
+      }
+    }
     async depositEther(e) {
         e.preventDefault();
         const state = this.state;
         const web3 = state.web3;
         await state.gameEvent.deposit({
             from: state.accounts[0],
-            value: web3.utils.toWei("1", "ether")
+            value: web3.utils.toWei(state.newDeposit, "ether")
         });
     }
 
@@ -82,28 +91,8 @@ class App extends Component {
         return (
             <Route>
                 <div>
-                    <div className="container">
-                        <nav className="navbar navbar-default navbar-expand-lg navbar-light bg-light">
-                            <span className="navbar-brand">AIWar</span>
-                            <ul className="navbar-nav mr-auto">
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/">Home</Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/about">About</Link>
-                                </li>
-                            </ul>
-                            <div className="form-inline">
-                                <span className="form-control navbar-text">Credit: { this.state.gameCredit } ETH</span>
-                                <button className="btn btn-default" onClick={ this.refreshDepositAmount }>
-                                    <span className="fas fa-sync" aria-hidden="true"></span>
-                                </button>
-                                <button className="btn btn-outline-success" onClick={ this.depositEther }>
-                                    Deposit
-                                </button>
-                            </div>
-                        </nav>
-                    </div>
+                    <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
+
                     <div className="container">
                         <Switch>
                             <Route exact path="/" render={(props) => <Home {...props} appState={this.state}/>}/>
@@ -111,6 +100,78 @@ class App extends Component {
                             <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} appState={this.state}/>}/>
                             <Redirect from="/" to="/" />
                         </Switch>
+                    </div>
+                    <div className="container fixed-bottom wallet">
+                        <footer>
+                          <div className="navbar navbar-inverse navbar-fixed-bottom p-1 py-2">
+                              <div className="container p-0">
+                                  {/* this is the icons (dots, home, info) at the top of the opened menu */}
+                                  <div className="w-100 row p-0 m-0">
+                                    <div className="col-7 text-right">
+                                      <i className="navbar-toggle fas fa-ellipsis-h d-inline d-sm-none"  data-toggle="collapse" data-target=".footer-body"></i>
+                                    </div>
+                                    <div className="col-5 p-0 m-0 collapse text-right footer-body">
+                                      <Link to="/" className="d-inline">
+                                        <i className="fas fa-home mr-2"></i>
+                                      </Link>
+                                      <Link className=" " to="/about"  className="d-inline">
+                                        <i className="fas fa-info-circle"></i>
+                                      </Link>
+                                    </div>
+                                  </div>
+                                  {/* this is the whole wallet part */}
+                                  <div className="navbar-collapse collapse footer-body">
+                                      <div className="row">
+                                          <div className="col-12 col-md-6 order-1 m-0  p-2">
+                                            <select className="col-7 m-0 p-0">
+                                              <option>Ropsten Testnet</option>
+                                            </select>
+                                            <button className="btn btn-default col-5 m-0 px-2 py-1" onClick={ this.refreshDepositAmount } ><i class="fas fa-sync-alt"></i>  Refresh </button>
+                                          </div>
+                                          <div className="col-12 col-sm-6 order-2 order-md-3 mt-2 section">
+                                            <h5>Wallet Balance</h5>
+                                            <h6>ETH { this.state.gameCredit } </h6>
+                                            <h6>USD xxxxxx</h6>
+                                            <form className="form-group form-row" onSubmit={this.depositEther }>
+                                              <input type="text" placeholder="Amount" className="col-7 m-0 p-2 " value={this.state.newDeposit} onChange={this.handleNewDeposit} />
+                                              <button type="submit" value="Deposit" className="col-5 m-0 p-0 btn btn-default">Deposit!</button>
+                                            </form>
+                                          </div>
+                                          <div className="col-12 col-sm-6 order-3 order-md-4 mt-2 section">
+                                            <h5>Deposited Credit</h5>
+                                            <h6>ETH { this.state.gameCredit } </h6>
+                                            <h6>USD xxxxxx</h6>
+                                            <form className="form-group form-row" onSubmit={this.depositEther }>
+                                              <input type="text" placeholder="Amount" className="col-7 m-0 p-2" value={this.state.newDeposit} onChange={this.handleNewDeposit} />
+                                              <button type="submit" value="Withdraw" className="col-5 m-0 p-0 btn btn-default">Withdraw!</button>
+                                            </form>
+                                          </div>
+                                          <div className="col-12 col-sm-6 order-4 order-md-2 mt-2 section">
+                                            <h5>Locked Credit</h5>
+                                            <h6>ETH { this.state.gameCredit } </h6>
+                                            <h6>USD xxxxxx</h6>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  {/*this is the part that is always visible */}
+                                  <div className="navbar-header w-100 p-0">
+                                      <div className="row p-2">
+                                          <div className="col-10 m-0 p-0 text-left align-middle">
+                                            <span className="h4">ETH Wallet</span>
+                                          </div>
+                                          <div
+                                            className="navbar-toggle col-2 m-0 p-0 text-right "
+                                            data-toggle="collapse"
+                                            data-target=".footer-body"
+                                            >
+                                            <Link to="#" >
+                                              <i className="d-inline fa-2x fas myChevron"></i></Link>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </footer>
                     </div>
                 </div>
             </Route>
