@@ -89,7 +89,8 @@ class Game extends AppComponent {
 
         return (
             <div>
-                <h2>{ `${this.state.gameName} Game` }</h2>
+
+                <h2 className="text-center">{ `${this.state.gameName} ` }</h2>
                 <button className="btn btn-default" onClick={ this.createNewRound }>Create New Round</button>
                 <button className="btn btn-default" onClick={ this.refreshLatestRounds }>
                     <span className="fas fa-sync" aria-hidden="true"></span>

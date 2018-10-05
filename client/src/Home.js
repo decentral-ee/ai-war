@@ -3,8 +3,12 @@ import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
 import GameContract from "./core/build/contracts/Game.json";
 
-function GameIcon(name) {
-  if (name === "TicTacToe"){
+function GameIcon(props) {
+  return(
+    <img src={"/" + props +".png"} alt={props}/>
+  );
+  /*
+  if (props === "TicTacToe"){
     return (
       <i className="fas fa-hashtag align-middle mr-2"></i>
     );
@@ -23,7 +27,7 @@ function GameIcon(name) {
     return (
       <i className="fas fa-chess align-middle mr-2"></i>
     );
-  };
+  };*/
 }
 
 class Home extends AppComponent {
@@ -46,6 +50,7 @@ class Home extends AppComponent {
                 return null;
             }
         }));
+
         gameList = gameList.filter(g => g !== null);
         gameList.push({
             address: 0x0,
@@ -55,7 +60,7 @@ class Home extends AppComponent {
             name: "Chess"
         }, {
             address: 0x0,
-            name: "R-P-S"
+            name: "RPS"
         });
         this.setState({ gameList });
     }
