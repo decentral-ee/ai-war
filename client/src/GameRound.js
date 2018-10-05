@@ -1,9 +1,9 @@
 import React from "react";
 import AppComponent from './AppComponent';
-import TicTacToeGameCanvas from './games/TicTacToeGameCanvas';
-import GameEventContract from "./contracts/GameEvent.json";
-import GameContract from "./contracts/Game.json";
-import GameRoundContract from "./contracts/GameRound.json";
+import GameEventContract from "./core/build/contracts/GameEvent.json";
+import GameContract from "./core/build/contracts/Game.json";
+import GameRoundContract from "./core/build/contracts/GameRound.json";
+import TicTacToeGameCanvas from './games/tictactoe/react/TicTacToeGameCanvas';
 
 class GameRound extends AppComponent {
     gameRound = null;
@@ -29,32 +29,32 @@ class GameRound extends AppComponent {
     }
 
     async refreshState() {
-        const web3 = this.props.appState.web3;
-        const player = this.props.appState.accounts[0];
+        const web3 = this.props.app.web3;
+        const player = this.props.app.state.accounts[0];
         const roundState = (await this.gameRound.getState.call()).toNumber();
-        const isRoundOwner = (await this.gameRound.owner.call()) === this.props.appState.accounts[0];
+        const isRoundOwner = (await this.gameRound.owner.call()) === this.props.app.state.accounts[0];
         const grantedAllowanceInWei = await this.gameEvent.getGrantedAllowance.call(this.state.gameRoundAddress, player);
         const grantedAllowance = web3.utils.fromWei(grantedAllowanceInWei.toString(), "ether");
         this.setState({ roundState, grantedAllowance, isRoundOwner });
     }
 
     async grantAllowance() {
-        const web3 = this.props.appState.web3;
-        const player = this.props.appState.accounts[0];
+        const web3 = this.props.app.web3;
+        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("0.1", "ether");
         await this.gameEvent.grantAllowance(this.state.gameRoundAddress, betSize, { from: player });
     }
 
     async joinGame() {
-        const web3 = this.props.appState.web3;
-        const player = this.props.appState.accounts[0];
+        const web3 = this.props.app.web3;
+        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("0.1", "ether");
         await this.gameRound.acceptInvitation(2, betSize, betSize, { from: player });
     }
 
     async selfInviteAndReady() {
-        const web3 = this.props.appState.web3;
-        const player = this.props.appState.accounts[0];
+        const web3 = this.props.app.web3;
+        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("0.1", "ether");
         await this.gameRound.selfInviteAndReady(1, betSize, betSize, { from: player });
     }
@@ -96,7 +96,7 @@ class GameRound extends AppComponent {
                     break;
                 default:
             }
-            controls = <GameCanvas appState={ this.props.appState } gameRoundAddress={ this.state.gameRoundAddress }/>;
+            controls = <GameCanvas app={ this.props.app } appComponent={ this } gameRoundAddress={ this.state.gameRoundAddress }/>;
         }
 
         return (

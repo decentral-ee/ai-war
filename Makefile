@@ -1,9 +1,14 @@
 build:
-	(cd core; npm run build)
-	(cd client; npm run build)
+	make -C core build
+	make -C client build
+
+clean:
+	make -C core clean
+	make -C client clean
 
 prepare:
-	(cd core; npm install)
-	(cd client; npm install)
+	(cd react-scripts; npm install)
+	make -C core prepare
+	make -C client prepare
 
-.PHONY: build prepare
+.PHONY: build clean prepare

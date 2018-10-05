@@ -6,8 +6,8 @@ function createMoveData(x, y) {
 
 function parseMoveData(data) {
     const d = data.toNumber();
-    const x = data & 3;
-    const y = data >> 2;
+    const x = d & 3;
+    const y = d >> 2;
     return {x, y};
 }
 

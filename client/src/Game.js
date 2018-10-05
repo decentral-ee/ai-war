@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
-import GameContract from "./contracts/Game.json";
-import GameRoundContract from "./contracts/GameRound.json";
+import GameContract from "./core/build/contracts/Game.json";
+import GameRoundContract from "./core/build/contracts/GameRound.json";
 
 class Game extends AppComponent {
     Game = null
@@ -26,15 +26,15 @@ class Game extends AppComponent {
     }
 
     async createNewRound() {
-        const myAccount = this.props.appState.accounts[0];
-        const platform = this.props.appState.platform;
-        const gameEvent = this.props.appState.gameEvent;
+        const myAccount = this.props.app.state.accounts[0];
+        const platform = this.props.app.platform;
+        const gameEvent = this.props.app.gameEvent;
         const defaultNumberOfPlayers = await this.game.defaultNumberOfPlayers.call();
         await platform.createGameRound(gameEvent.address, this.game.address, defaultNumberOfPlayers, { from: myAccount });
     }
 
     async refreshLatestRounds() {
-        const web3 = this.props.appState.web3;
+        const web3 = this.props.app.web3;
         let latestRounds = await this.getNPastLogs(10, 'AIWar_GameRound_Created(address,address)',[
             null,
             web3.utils.padLeft(this.game.address.toLowerCase(), 64)

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.23;
 
-import '../Game.sol';
+import '../../../core/contracts/Game.sol';
 
 contract TicTacToeGame is Game {
     enum GameOverReasonExt {

@@ -5,19 +5,20 @@ import GameRound from './GameRound';
 import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 
-import Deployments from "./sdk/deployments.json"
-import AIWarPlatformContract from "./contracts/AIWarPlatform.json";
-import OpenEtherbetGameEventContract from "./contracts/OpenEtherbetGameEvent.json";
+import Deployments from "./core/sdk/deployments.json"
+import AIWarPlatformContract from "./core/build/contracts/AIWarPlatform.json";
+import OpenEtherbetGameEventContract from "./core/build/contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
 
 import "./App.css";
 
 class App extends Component {
+    web3 = null;
+    platform = null;
+    gameEvent = null;
+
     state = {
-        web3: null,
         accounts: null,
-        platform: null,
-        gameEvent: null,
         gameCredit: 0,
         newDeposit: ""
     };
@@ -32,26 +33,26 @@ class App extends Component {
     async componentDidMount() {
         try {
             // Get network provider and web3 instance.
-            const web3 = await getWeb3();
-            const networkId = await web3.eth.net.getId();
+            this.web3 = await getWeb3();
+            const networkId = await this.web3.eth.net.getId();
             const deployments = Deployments.networks[networkId];
             if (!deployments) throw new Error(`Contracts not deployed to the network ${networkId}`);
             console.log(`Deployed contracts:`, JSON.stringify(deployments));
 
             // Use web3 to get the user's accounts.
-            const accounts = await web3.eth.getAccounts();
+            const accounts = await this.web3.eth.getAccounts();
 
             const AIWarPlatform = truffleContract(AIWarPlatformContract);
-            AIWarPlatform.setProvider(web3.currentProvider);
-            const platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
+            AIWarPlatform.setProvider(this.web3.currentProvider);
+            this.platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
 
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
-            OpenEtherbetGameEvent.setProvider(web3.currentProvider);
-            const gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
+            OpenEtherbetGameEvent.setProvider(this.web3.currentProvider);
+            this.gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
 
             // Set web3, accounts, and contract to the state, and then proceed with an
             // example of interacting with the contract's methods.
-            this.setState({ web3, accounts, platform, gameEvent });
+            this.setState({ accounts });
             this.refreshDepositAmount();
         } catch (error) {
             console.error(error);
@@ -68,36 +69,36 @@ class App extends Component {
     async depositEther(e) {
         e.preventDefault();
         const state = this.state;
-        const web3 = state.web3;
         await state.gameEvent.deposit({
             from: state.accounts[0],
-            value: web3.utils.toWei(state.newDeposit, "ether")
+            value: this.web3.utils.toWei(state.newDeposit, "ether")
         });
     }
 
     async refreshDepositAmount(e) {
         if (e) e.preventDefault();
         const state = this.state;
-        const web3 = state.web3;
-        const gameCreditInWei = await state.gameEvent.getDepositAmount.call(state.accounts[0]);
-        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
+        const gameCreditInWei = await this.gameEvent.getDepositAmount.call(state.accounts[0]);
+        const gameCredit = this.web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
         this.setState({ gameCredit });
     }
 
     render() {
-        if (!this.state.web3) {
+        if (!this.web3) {
             return <div>Loading Web3, accounts, and contract...</div>;
         }
         return (
             <Route>
                 <div>
-                    <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
+                    <Link to="/">
+                        <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
+                    </Link>
 
                     <div className="container">
                         <Switch>
-                            <Route exact path="/" render={(props) => <Home {...props} appState={this.state}/>}/>
-                            <Route path="/g/:gameAddress" render={(props) => <Game {...props} appState={this.state}/>}/>
-                            <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} appState={this.state}/>}/>
+                            <Route exact path="/" render={(props) => <Home {...props} app={this}/>}/>
+                            <Route path="/g/:gameAddress" render={(props) => <Game {...props} app={this}/>}/>
+                            <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} app={this}/>}/>
                             <Redirect from="/" to="/" />
                         </Switch>
                     </div>
@@ -114,7 +115,7 @@ class App extends Component {
                                       <Link to="/" className="d-inline">
                                         <i className="fas fa-home mr-2"></i>
                                       </Link>
-                                      <Link className=" " to="/about"  className="d-inline">
+                                      <Link to="/about" className="d-inline">
                                         <i className="fas fa-info-circle"></i>
                                       </Link>
                                     </div>
@@ -126,7 +127,7 @@ class App extends Component {
                                             <select className="col-7 m-0 p-0">
                                               <option>Ropsten Testnet</option>
                                             </select>
-                                            <button className="btn btn-default col-5 m-0 px-2 py-1" onClick={ this.refreshDepositAmount } ><i class="fas fa-sync-alt"></i>  Refresh </button>
+                                            <button className="btn btn-default col-5 m-0 px-2 py-1" onClick={ this.refreshDepositAmount } ><i className="fas fa-sync-alt"></i>  Refresh </button>
                                           </div>
                                           <div className="col-12 col-sm-6 order-2 order-md-3 mt-2 section">
                                             <h5>Wallet Balance</h5>

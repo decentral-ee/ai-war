@@ -8,7 +8,7 @@ const MAXIMUM_BLOCK_HISTORY = 10000;
 class AppComponent extends Component {
     getTruffleContract(contractJson) {
         const Contract = truffleContract(contractJson);
-        Contract.setProvider(this.props.appState.web3.currentProvider);
+        Contract.setProvider(this.props.app.web3.currentProvider);
         return Contract;
     }
 
@@ -17,7 +17,7 @@ class AppComponent extends Component {
         const promise = new Promise(async function (resolve, reject) {
             var events = [];
             const topics = [ eventSig ? Web3.utils.sha3(eventSig) : null].concat(indexedParameters);
-            const web3 = that.props.appState.web3;
+            const web3 = that.props.app.web3;
             const latestBlockNumber = await web3.eth.getBlockNumber();
             const f = (toBlockNumber) => {
                 const fromBlockNumber = Math.max(0, toBlockNumber - BLOCK_RANGE);
