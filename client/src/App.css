@@ -23,20 +23,30 @@ body{
 }
 
 @media (min-width: 576px) {
-    html { font-size: 1.25rem; }
+    html { font-size: 1rem; }
 }
 @media (min-width: 768px) {
-    html { font-size: 1.5rem; }
+    html { font-size: 1.25rem; }
 }
 @media (min-width: 992px) {
+    html { font-size: 1.5rem; }
 }
 
 .App {
   text-align: center;
 }
+
+/* gamelist styles */
+
 .gameList i{
   padding:5px;
   font-size: 2em;
+}
+
+.gameList img {
+	height: 3em;
+	width: auto;
+	margin-right: 0.5em;
 }
 
 a {
@@ -53,6 +63,7 @@ a:focus, a:hover{
     letter-spacing: 1px;
     border-radius:10px;
 }
+
 
 .btn:focus, .btn:active:focus, .btn.active:focus {
     outline: 0 none;
@@ -76,18 +87,11 @@ a:focus, a:hover{
     color: #000000;
 }
 
-/* this little hack changes the chevron from up to down when the menu is expanded*/
-.myChevron::before{
-  content: "\f139";
-}
-[aria-expanded="true"] .myChevron::before{
-  content: "\f13a";
-}
-
-/* wallet styling  */
+/*wallet are styling */
 .wallet{
-  background-color: #673ab7;
-  color:#ffffff;
+  border-radius: 10px 10px 0 0;
+    background-color: #673ab7;
+    color:#ffffff;
 }
 .wallet input{
   border-radius:0;
@@ -103,8 +107,19 @@ a:focus, a:hover{
 }
 .wallet .section h6, .wallet .section h5{
   line-height:0.7;
-} 
+}
 .wallet button:focus, .wallet button:hover{
   background-color:#dddddd;
   color:#581d8b;
+}
+.wallet .locked div{
+  background-color:rgba(0,0,0,0.25);
+  color:#bbb;
+}
+/* this little hack changes the chevron from up to down when the menu is expanded*/
+.myChevron::before{
+  content: "\f139";
+}
+[aria-expanded="true"] .myChevron::before{
+  content: "\f13a";
 }
