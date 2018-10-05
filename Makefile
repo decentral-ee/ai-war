@@ -3,6 +3,7 @@ build:
 	make -C client build
 
 clean:
+	(cd react-scripts; rm -rf node_modules/)
 	make -C core clean
 	make -C client clean
 

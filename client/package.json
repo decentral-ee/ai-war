@@ -9,14 +9,11 @@
     "truffle-contract": "^4.0.0-next.0",
     "web3": "^1.0.0-beta.35"
   },
-  "devDependencies": {
-    "react-scripts": "../react-scripts"
-  },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "start": "../react-scripts/bin/react-scripts.js start",
+    "build": "../react-scripts/bin/react-scripts.js build",
+    "test": "../react-scripts/bin/react-scripts.js test --env=jsdom",
+    "eject": "../react-scripts/bin/react-scripts.js eject"
   },
   "browserslist": [
     ">0.2%",

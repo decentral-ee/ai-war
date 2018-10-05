@@ -210,6 +210,7 @@ module.exports = {
       // Make sure your source files are compiled, as they will not be processed in any way.
       new ModuleScopePlugin(paths.appSrc, [paths.appPackageJson]),
     ],
+    symlinks: false,
   },
   module: {
     strictExportPresence: true,
