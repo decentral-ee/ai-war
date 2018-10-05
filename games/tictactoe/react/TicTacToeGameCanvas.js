@@ -1,11 +1,10 @@
-import React from "react";
-import AppComponent from '../AppComponent';
-import GameContract from "../contracts/Game.json";
-import GameRoundContract from "../contracts/GameRound.json";
-import gameUtils from '../sdk/games/tictactoe_game.js';
+import React, { Component } from "react";
+import GameContract from "../../../core/build/contracts/Game.json";
+import GameRoundContract from "../../../core/build/contracts/GameRound.json";
+import gameUtils from '../utils';
 import './TicTacToeGameCanvas.css';
 
-class TicTacToeGameCanvas extends AppComponent {
+class TicTacToeGameCanvas extends Component {
     game = null;
     round = null;
     state = {
@@ -16,8 +15,8 @@ class TicTacToeGameCanvas extends AppComponent {
     };
 
     async componentDidMount() {
-        const GameRound = this.getTruffleContract(GameRoundContract);
-        const Game = this.getTruffleContract(GameContract);
+        const GameRound = this.props.appComponent.getTruffleContract(GameRoundContract);
+        const Game = this.props.appComponent.getTruffleContract(GameContract);
         this.round = await GameRound.at(this.props.gameRoundAddress);
         this.game = await Game.at(await this.round.getGame.call());
         this.refreshBoard();
@@ -47,9 +46,9 @@ class TicTacToeGameCanvas extends AppComponent {
     }
 
     async makeMove(x, y) {
-        const web3 = this.props.appState.web3;
+        const web3 = this.props.app.web3;
         const moveData = gameUtils.createMoveData(x, y);
-        const player = this.props.appState.accounts[0];
+        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("0.1", "ether");
         const side = await this.round.getPlayer.call(1) === player ? 1 : 2;
         console.log("makeMove", side, moveData);
@@ -57,14 +56,14 @@ class TicTacToeGameCanvas extends AppComponent {
     }
 
     async checkWinner() {
-        const player = this.props.appState.accounts[0];
+        const player = this.props.app.state.accounts[0];
         const n = await this.round.getNumberOfMoves.call();
         await this.round.syncGameData(n, { from: player});
         this.refreshBoard();
     }
 
     async settlePayout() {
-        const player = this.props.appState.accounts[0];
+        const player = this.props.app.state.accounts[0];
         await this.round.settlePayout({ from: player });
     }
 

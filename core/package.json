@@ -1,7 +1,6 @@
 {
   "name": "ai-war-core",
   "version": "0.1.0",
-  "private": true,
   "devDependencies": {
     "jq": "^1.7.2",
     "node-jq": "^1.3.1",

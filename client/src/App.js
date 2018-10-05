@@ -5,19 +5,20 @@ import GameRound from './GameRound';
 import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 
-import Deployments from "./sdk/deployments.json"
-import AIWarPlatformContract from "./contracts/AIWarPlatform.json";
-import OpenEtherbetGameEventContract from "./contracts/OpenEtherbetGameEvent.json";
+import Deployments from "./core/sdk/deployments.json"
+import AIWarPlatformContract from "./core/build/contracts/AIWarPlatform.json";
+import OpenEtherbetGameEventContract from "./core/build/contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
 
 import "./App.css";
 
 class App extends Component {
+    web3 = null;
+    platform = null;
+    gameEvent = null;
+
     state = {
-        web3: null,
         accounts: null,
-        platform: null,
-        gameEvent: null,
         gameCredit: 0,
         lockedDeposit:0,
         newDeposit: ""
@@ -42,11 +43,11 @@ class App extends Component {
             console.log(`Deployed contracts:`, JSON.stringify(deployments));
 
             // Use web3 to get the user's accounts.
-            const accounts = await web3.eth.getAccounts();
+            const accounts = await this.web3.eth.getAccounts();
 
             const AIWarPlatform = truffleContract(AIWarPlatformContract);
-            AIWarPlatform.setProvider(web3.currentProvider);
-            const platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
+            AIWarPlatform.setProvider(this.web3.currentProvider);
+            this.platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
 
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
             OpenEtherbetGameEvent.setProvider(web3.currentProvider);
@@ -69,7 +70,6 @@ class App extends Component {
             // example of interacting with the contract's methods.
             this.setState({ web3, accounts, platform, gameEvent, networkString });
             this.refreshWallet();
-
         } catch (error) {
             console.error(error);
         }
@@ -86,10 +86,9 @@ class App extends Component {
     async depositEther(e) {
         e.preventDefault();
         const state = this.state;
-        const web3 = state.web3;
         await state.gameEvent.deposit({
             from: state.accounts[0],
-            value: web3.utils.toWei(state.newDeposit, "ether")
+            value: this.web3.utils.toWei(state.newDeposit, "ether")
         });
     }
     handleNewWithdraw(e){
@@ -128,7 +127,7 @@ class App extends Component {
     }
 
     render() {
-        if (!this.state.web3) {
+        if (!this.web3) {
             return <div>Loading Web3, accounts, and contract...</div>;
         }
         return (
@@ -137,9 +136,9 @@ class App extends Component {
                     <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
                     <div className="container">
                         <Switch>
-                            <Route exact path="/" render={(props) => <Home {...props} appState={this.state}/>}/>
-                            <Route path="/g/:gameAddress" render={(props) => <Game {...props} appState={this.state}/>}/>
-                            <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} appState={this.state}/>}/>
+                            <Route exact path="/" render={(props) => <Home {...props} app={this}/>}/>
+                            <Route path="/g/:gameAddress" render={(props) => <Game {...props} app={this}/>}/>
+                            <Route path="/r/:gameRoundAddress" render={(props) => <GameRound {...props} app={this}/>}/>
                             <Redirect from="/" to="/" />
                         </Switch>
                     </div>
