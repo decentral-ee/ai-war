@@ -3,7 +3,7 @@ import AppComponent from './AppComponent';
 import GameEventContract from "./core/build/contracts/GameEvent.json";
 import GameContract from "./core/build/contracts/Game.json";
 import GameRoundContract from "./core/build/contracts/GameRound.json";
-import TicTacToeGameCanvas from './games/tictactoe/react/TicTacToeGameCanvas';
+import TicTacToeGameCanvas from './games/tictactoe/react/components/TicTacToeGameCanvas';
 
 class GameRound extends AppComponent {
     gameRound = null;

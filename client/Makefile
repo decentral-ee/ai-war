@@ -4,7 +4,10 @@ build:
 clean:
 	rm -rf build
 
+test:
+	CI=true npm test
+
 prepare:
 	npm install
 
-.PHONY: build clean prepare
+.PHONY: build clean test prepare

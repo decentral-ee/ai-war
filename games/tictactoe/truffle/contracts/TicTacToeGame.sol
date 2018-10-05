@@ -1,12 +1,10 @@
 pragma solidity ^0.4.23;
 
-import '../../../core/contracts/Game.sol';
+import '../../../../core/contracts/Game.sol';
 
 contract TicTacToeGame is Game {
-    enum GameOverReasonExt {
-        NOT_OVER,
-        HAS_WINNER,
-        TIED,
+    enum GameViolationReasons {
+        NO_VIOLATION,
         INVALID_MOVE_DATA_WRONG_SIDE_NUMBER,
         INVALID_MOVE_DATA_WRONG_CORDINATES,
         INVALID_MOVE_WRONG_TURN,
@@ -42,7 +40,8 @@ contract TicTacToeGame is Game {
             bytes memory newData,
             uint syncedTurn,
             uint gameOverReason,
-            uint causingSide) {
+            uint causingSide,
+            uint gameViolationReason) {
         uint i;
         require(data.length == GAME_DATA_LENGTH, "Wrong game data length");
         // copy data
@@ -59,45 +58,48 @@ contract TicTacToeGame is Game {
         }
         // make moves
         for (i = previousTurn; i < toTurn; ++i) {
-            (uint causingSide_, uint gameOverReason_) = makeMove(newData, i, moves[i]);
+            (uint causingSide_, uint gameOverReason_, uint gameViolationReason_) = makeMove(newData, i, moves[i]);
             if (gameOverReason_ > 0) {
                 syncedTurn = i + 1;
                 causingSide = causingSide_;
                 gameOverReason = gameOverReason_;
+                gameViolationReason = gameViolationReason_;
                 return;
             }
         }
         syncedTurn = toTurn;
     }
 
-    function decodeGameOverReason(uint gameOverReason) public view returns (string reason){
-               if (gameOverReason == uint(GameOverReasonExt.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER)) {
+    function decodeGameViolationReason(uint gameOverReason) public view returns (string reason){
+       if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER)) {
             reason = "Invalid move data: wrong side number";
-        } else if (gameOverReason == uint(GameOverReasonExt.INVALID_MOVE_DATA_WRONG_CORDINATES)) {
+        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_CORDINATES)) {
             reason = "Invalid move data: invalid coordinates";
-        } else if (gameOverReason == uint(GameOverReasonExt.INVALID_MOVE_WRONG_TURN)) {
+        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_WRONG_TURN)) {
             reason = "Invalid move: wrong turn";
-        } else if (gameOverReason == uint(GameOverReasonExt.INVALID_MOVE_CELL_ALREADY_TAKEN)) {
-            reason = "Invalid move: cell is already taken";
+        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_CELL_ALREADY_TAKEN)) {
+        reason = "Invalid move: cell is already taken";
         } else {
-            reason = decodeGameOverReasonBase(gameOverReason);
+            reason = "Game violation: unknown reason";
         }
     }
 
     function makeMove(bytes memory data, uint previousTurn, uint16 move) private pure returns (
             uint causingSide,
-            uint gameOverReason
+            uint gameOverReason,
+            uint gameViolationReason
         ) {
         (uint8 side, uint16 x, uint16 y, uint invalidMoveReason) = decodeTicTacToeMove(move);
         (uint xx, uint yy) = toXXYY(x, y);
         if (invalidMoveReason > 0) {
-            gameOverReason = invalidMoveReason;
+            gameViolationReason = invalidMoveReason;
         } else if (((previousTurn % 2) == 0 ? 1 : 2) != side) {
-            gameOverReason = uint(GameOverReasonExt.INVALID_MOVE_WRONG_TURN);
+            gameViolationReason = uint(GameViolationReasons.INVALID_MOVE_WRONG_TURN);
         } else if (data[yy] & byte(3 << (xx*2)) > 0) {
-            gameOverReason = uint(GameOverReasonExt.INVALID_MOVE_CELL_ALREADY_TAKEN);
+            gameViolationReason = uint(GameViolationReasons.INVALID_MOVE_CELL_ALREADY_TAKEN);
         }
-        if (gameOverReason > 0) {
+        if (gameViolationReason > 0) {
+            gameOverReason = uint(GameOverReason.HAS_VIOLATOR);
             causingSide = side;
             data[2] |= byte(causingSide << 2 | gameOverReason << 4);
             return;
@@ -105,10 +107,10 @@ contract TicTacToeGame is Game {
         data[yy] |= (byte)(side << (xx*2));
         if (detectWin(data, side)) {
             causingSide = side;
-            gameOverReason = uint(GameOverReasonExt.HAS_WINNER);
+            gameOverReason = uint(GameOverReason.HAS_WINNER);
         } else if (previousTurn >= 16) {
             causingSide = side;
-            gameOverReason = uint(GameOverReasonExt.TIED);
+            gameOverReason = uint(GameOverReason.TIED);
         }
     }
 
@@ -149,17 +151,17 @@ contract TicTacToeGame is Game {
         uint16 x,
         uint16 y,
         uint invalidMoveReason) {
-        invalidMoveReason = uint(GameOverReason.NOT_OVER);
+        invalidMoveReason = uint(GameViolationReasons.NO_VIOLATION);
         (uint8 side_, uint16 moveData) = decodeMove(move);
         side = side_;
         if (side != 1 && side != 2) {
-            invalidMoveReason = uint(GameOverReasonExt.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER);
+            invalidMoveReason = uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER);
             return;
         }
         x = moveData & 3;
         y = (moveData & 12) >> 2;
         if (moveData > 15 || x >= 3 || y >= 3) {
-            invalidMoveReason = uint(GameOverReasonExt.INVALID_MOVE_DATA_WRONG_CORDINATES);
+            invalidMoveReason = uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_CORDINATES);
             return;
         }
     }

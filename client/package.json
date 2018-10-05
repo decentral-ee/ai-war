@@ -20,5 +20,9 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "@babel/runtime": "^7.1.2",
+    "react-app-polyfill": "^0.1.3"
+  }
 }

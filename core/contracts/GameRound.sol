@@ -55,6 +55,8 @@ library GameRoundLib {
         uint gameOverReason;
 
         uint causingSide;
+
+        uint gameViolationReason;
     }
 
     function getMove(GameRoundData storage self, uint turn) external view returns (uint8 side, uint16 data) {
@@ -130,9 +132,13 @@ library GameRoundLib {
         }
         PlayerData storage playerData = self.players[side];
         require(playerData.player == 0, "Player has already been set");
-        uint grantedAllowance = self.gameEvent.getGrantedAllowance(this, player);
-        require(grantedAllowance >= maximumBetSize, "Not enough allowance granted");
-        require(self.gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
+
+        if (self.gameEvent != address(0)) {
+            uint grantedAllowance = self.gameEvent.getGrantedAllowance(this, player);
+            require(grantedAllowance >= maximumBetSize, "Not enough allowance granted");
+            require(self.gameEvent.lockBalance(player, maximumBetSize), "Balance lock failed");
+        }
+
         playerData.player = player;
         playerData.maximumBetSize = maximumBetSize;
         playerData.currentBetSize = currentBetSize;
@@ -142,7 +148,9 @@ library GameRoundLib {
         ++self.joinedPlayers;
         if (self.joinedPlayers == self.expectedNumberOfPlayers) {
             self.state = State.InProgress;
-            self.cb.gameRoundStarted(self.gameEvent, self.game, this);
+            if (self.cb != address(0)) {
+                self.cb.gameRoundStarted(self.gameEvent, self.game, this);
+            }
             emit AIWar_GameRound_Started(self.gameEvent, self.game);
         }
     }
@@ -204,7 +212,8 @@ library GameRoundLib {
         (bytes memory newData,
         uint syncedTurn,
         uint gameOverReason,
-        uint causingSide) = self.game.syncGameData(
+        uint causingSide,
+        uint gameViolationReason) = self.game.syncGameData(
             self.gameData, self.moves,
             self.syncedTurn, untilTurn);
         uint dataLength = self.gameData.length;
@@ -218,8 +227,11 @@ library GameRoundLib {
             if (self.gameOverReason != gameOverReason) {
                 self.gameOverReason = gameOverReason;
                 self.causingSide = causingSide;
+                self.gameViolationReason = gameViolationReason;
                 self.state = State.Ended;
-                self.cb.gameRoundEnded(self.gameEvent, self.game, this);
+                if (self.cb != address(0)) {
+                    self.cb.gameRoundEnded(self.gameEvent, self.game, this);
+                }
                 emit AIWar_GameRound_Ended(self.gameEvent, self.game);
             }
         }
@@ -227,12 +239,23 @@ library GameRoundLib {
 
     function settlePayout(GameRoundData storage self) external {
         require(self.state == State.Ended, "Game has not ended yet");
+        if (self.gameEvent == address(0)) return;
+
+        address winner;
+        address loser;
         if (self.gameOverReason == uint(Game.GameOverReason.HAS_WINNER)) {
-            address winner = self.players[self.causingSide].player;
-            address loser = self.players[self.causingSide == 1 ? 2 : 1].player;
+            winner = self.players[self.causingSide].player;
+            loser = self.players[self.causingSide == 1 ? 2 : 1].player;
+        } else if (self.gameOverReason == uint(Game.GameOverReason.HAS_VIOLATOR)) {
+            loser = self.players[self.causingSide].player;
+            winner = self.players[self.causingSide == 1 ? 2 : 1].player;
+        } // else tied
+        if (winner != address(0)) {
             uint lostAmount = self.gameEvent.getLockedBalance(this, loser);
             self.gameEvent.transferLockedBalance(loser, winner, lostAmount);
         }
+
+        // unlock all balances when game ends
         self.gameEvent.unlockAllBalance(self.players[1].player);
         self.gameEvent.unlockAllBalance(self.players[2].player);
     }
@@ -255,6 +278,7 @@ contract GameRound is Owned {
     function getGameData() external view returns (bytes) { return self.gameData; }
     function getGameOverReason() external view returns (uint) { return self.gameOverReason; }
     function getCausingSide() external view returns (uint) { return self.causingSide; }
+    function getGameViolationReason() external view returns (uint) { return self.gameViolationReason; }
 
     //
     // Configuration functions, only used by creator

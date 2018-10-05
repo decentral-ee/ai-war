@@ -58,9 +58,6 @@ class Home extends AppComponent {
         }, {
             address: 0x0,
             name: "Chess"
-        }, {
-            address: 0x0,
-            name: "RPS"
         });
         this.setState({ gameList });
     }

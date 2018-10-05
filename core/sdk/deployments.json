@@ -13,13 +13,13 @@
         },
         "5777": {
             "AIWarPlatform": {
-                "deployedAddress": "0x34bf29ba0f4193a6f0f70aceb47b969a2666c2d0"
+                "deployedAddress": "0xd9b3c2d7164f3f8c6ab8ffb4de105a67c4ba6d9d"
             },
             "Migrations": {
-                "deployedAddress": "0x1dca09e3dbc9adec8a71e6c5390cace6924ae767"
+                "deployedAddress": "0xb0bfab50b07617d5548267e926a419ee0e56dd67"
             },
             "OpenEtherbetGameEvent": {
-                "deployedAddress": "0xba20f620e0fd9c705ec81fb3e3040b5e45e40215"
+                "deployedAddress": "0x5b10fd0ebf76cacb60469a5cf7da931fdd80b55b"
             }
         }
     }

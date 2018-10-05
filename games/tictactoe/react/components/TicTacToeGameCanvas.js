@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import GameContract from "../../../core/build/contracts/Game.json";
-import GameRoundContract from "../../../core/build/contracts/GameRound.json";
-import gameUtils from '../utils';
+import GameContract from "../../../../core/build/contracts/Game.json";
+import GameRoundContract from "../../../../core/build/contracts/GameRound.json";
+import gameUtils from '../../utils';
 import './TicTacToeGameCanvas.css';
 
 class TicTacToeGameCanvas extends Component {
