@@ -1,7 +1,6 @@
 build:
 	make -C core build
 	make -C client build
-	cp -f _headers client/build/
 
 clean:
 	(cd react-scripts; rm -rf node_modules/)
