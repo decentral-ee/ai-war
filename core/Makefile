@@ -15,7 +15,12 @@ migrate-reset:
 	npm run truffle -- migrate --reset
 	npm run truffle -- exec truffle-scripts/extract-deployments.js
 
+.PHONY: migrate-reset
+
 prepare:
 	npm install
 
-.PHONY: migrate-reset
+reset:
+	rm -rf node_modules
+
+.PHONY: prepare reset

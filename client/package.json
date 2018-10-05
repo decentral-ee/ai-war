@@ -1,5 +1,6 @@
 {
   "name": "ai-war-client",
+  "description": "AIWar client, react based UI",
   "version": "0.1.0",
   "dependencies": {
     "bignumber.js": "^7.2.1",
@@ -21,8 +22,6 @@
     "not ie <= 11",
     "not op_mini all"
   ],
-  "devDependencies": {
-    "@babel/runtime": "^7.1.2",
-    "react-app-polyfill": "^0.1.3"
-  }
+  "license": "ISC",
+  "repository": "https://github.com/decentral-ee/ai-war"
 }

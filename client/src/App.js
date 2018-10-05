@@ -35,9 +35,9 @@ class App extends Component {
     async componentDidMount() {
         try {
             // Get network provider and web3 instance.
-            const web3 = await getWeb3();
-            const networkId = await web3.eth.net.getId();
-            const networkString = await web3.eth.net.getNetworkType()
+            this.web3 = await getWeb3();
+            const networkId = await this.web3.eth.net.getId();
+            const networkString = await this.web3.eth.net.getNetworkType()
             const deployments = Deployments.networks[networkId];
             if (!deployments) throw new Error(`Contracts not deployed to the network ${networkId}`);
             console.log(`Deployed contracts:`, JSON.stringify(deployments));
@@ -50,8 +50,8 @@ class App extends Component {
             this.platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
 
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
-            OpenEtherbetGameEvent.setProvider(web3.currentProvider);
-            const gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
+            OpenEtherbetGameEvent.setProvider(this.web3.currentProvider);
+            this.gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
             //get ETH value exchange rate from CMC API
             try {
               const response = await fetch(`https://api.coinmarketcap.com/v1/ticker/ethereum/`);
@@ -68,7 +68,7 @@ class App extends Component {
             }
             // Set web3, accounts, and contract to the state, and then proceed with an
             // example of interacting with the contract's methods.
-            this.setState({ web3, accounts, platform, gameEvent, networkString });
+            this.setState({ accounts, networkString });
             this.refreshWallet();
         } catch (error) {
             console.error(error);
@@ -86,7 +86,7 @@ class App extends Component {
     async depositEther(e) {
         e.preventDefault();
         const state = this.state;
-        await state.gameEvent.deposit({
+        await this.gameEvent.deposit({
             from: state.accounts[0],
             value: this.web3.utils.toWei(state.newDeposit, "ether")
         });
@@ -103,11 +103,11 @@ class App extends Component {
         e.preventDefault();
         const state = this.state;
         console.log("function withdrawAll called");
-        await state.gameEvent.withdrawAll({
+        await this.gameEvent.withdrawAll({
           from: state.accounts[0],
         });
         /*
-        await state.gameEvent.withdrawEther({
+        await this.gameEvent.withdrawEther({
             from: state.accounts[0],
             value: web3.utils.toWei(state.newWithdraw, "ether")
         });*/
@@ -115,12 +115,12 @@ class App extends Component {
     async refreshWallet(e) {
         if (e) e.preventDefault();
         const state = this.state;
-        const web3 = state.web3;
+        const web3 = this.web3;
         const bal = await web3.eth.getBalance(this.state.accounts[0]);
         const balance = web3.utils.fromWei(bal.toString(), 'ether');
-        const gameCreditInWei = await state.gameEvent.getDepositAmount.call(state.accounts[0]);
+        const gameCreditInWei = await this.gameEvent.getDepositAmount.call(state.accounts[0]);
         const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
-        const lockedDepositInWei = await state.gameEvent.getTotalLockedBalance.call(state.accounts[0]);
+        const lockedDepositInWei = await this.gameEvent.getTotalLockedBalance.call(state.accounts[0]);
         const lockedDeposit = web3.utils.fromWei(lockedDepositInWei.toString(), 'ether');
         this.setState({ gameCredit, balance, lockedDeposit });
         console.log("wallet refreshed");
@@ -133,7 +133,9 @@ class App extends Component {
         return (
             <Route>
                 <div>
-                    <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
+                    <Link to="/">
+                        <div className="Logo text-center p-4 mb-2 h-18"><img src="logo.png" alt="AiWar.io logo"/></div>
+                    </Link>
                     <div className="container">
                         <Switch>
                             <Route exact path="/" render={(props) => <Home {...props} app={this}/>}/>
@@ -174,7 +176,7 @@ class App extends Component {
                                             <h6>ETH { this.state.gameCredit } </h6>
                                             <h6>USD { Math.round(this.state.gameCredit * this.state.exchange["USD"]* 100) / 100}</h6>
                                             <form className="form-group form-row" onSubmit={this.withdrawEther }>
-                                              <input type="text" placeholder={this.state.gameCredit} disabled="true" className="col-7 m-0 p-2" value={this.state.newWithdraw} onChange={this.handleNewWithdraw} />
+                                              <input type="text" placeholder={this.state.gameCredit} disabled className="col-7 m-0 p-2" value={this.state.newWithdraw} onChange={this.handleNewWithdraw} />
                                               <button type="submit" value="Withdraw" className="col-5 m-0 p-0 btn btn-default">Withdraw</button>
                                             </form>
                                           </div>

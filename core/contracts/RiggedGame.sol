@@ -24,7 +24,7 @@ contract RiggedGame is Game {
     function rig(
         uint gameOverReason,
         uint causingSide,
-        uint gameViolationReason) {
+        uint gameViolationReason) public {
         riggedGameOverReason = gameOverReason;
         riggedCausingSide = causingSide;
         riggedGameViolationReason = gameViolationReason;
@@ -39,9 +39,9 @@ contract RiggedGame is Game {
     }
 
     function syncGameData(
-        bytes data, uint16[] moves,
-        uint previousTurn, uint toTurn) external view returns (
-            bytes newData,
+        bytes /*data*/, uint16[] /*moves*/,
+        uint previousTurn, uint /*toTurn*/) external view returns (
+            bytes /*newData*/,
             uint syncedTurn,
             uint gameOverReason,
             uint causingSide,

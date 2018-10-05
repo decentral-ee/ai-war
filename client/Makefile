@@ -7,7 +7,12 @@ clean:
 test:
 	CI=true npm test
 
+.PHONY: build clean test
+
 prepare:
 	npm install
 
-.PHONY: build clean test prepare
+reset:
+	rm -rf node_modules
+
+.PHONY: prepare reset
