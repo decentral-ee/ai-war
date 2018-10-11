@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
-import GameContract from "./core/build/contracts/Game.json";
+import GameContract from "ai-war-core/build/contracts/Game.json";
 
 function GameIcon(props) {
   return(

@@ -346,6 +346,7 @@ contract GameRound is Owned {
     function getGameEvent() external view returns (GameEvent) { return self.gameEvent; }
     function getGame() external view returns (Game) { return self.game; }
     function getState() external view returns (GameRoundLib.State) { return self.state; }
+    function getNumberOfPlayers() external view returns (uint8) { return self.nSides; }
     function getPlayer(uint side) external view returns (address) { return self.players[side].player; }
     function getNumberOfMoves() external view returns (uint) { return self.moves.length; }
     function getMove(uint turn) external view returns (uint8 side, uint16 data) {

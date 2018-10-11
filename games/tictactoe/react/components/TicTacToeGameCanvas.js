@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import GameContract from "../../../../core/build/contracts/Game.json";
-import GameRoundContract from "../../../../core/build/contracts/GameRound.json";
+import GameContract from "ai-war-core/build/contracts/Game.json";
+import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
 import gameUtils from '../../utils';
 import './TicTacToeGameCanvas.css';
 

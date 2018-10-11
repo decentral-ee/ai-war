@@ -1,5 +1,3 @@
-'use strict';
-
 const Move = {
     Rock : 1,
     Paper : 2,

@@ -3,6 +3,7 @@
   "description": "AIWar client, react based UI",
   "version": "0.1.0",
   "dependencies": {
+    "ai-war-core": "../core",
     "bignumber.js": "^7.2.1",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",

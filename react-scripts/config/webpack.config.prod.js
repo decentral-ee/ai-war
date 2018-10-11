@@ -243,6 +243,7 @@ module.exports = {
           },
         ],
         include: paths.appSrc,
+        exclude: /\/node_modules\//,
       },
       {
         // "oneOf" will traverse all following loaders until one will
@@ -264,6 +265,7 @@ module.exports = {
           {
             test: /\.(js|jsx)$/,
             include: paths.appSrc,
+            exclude: /\/node_modules\//,
             use: [
               // This loader parallelizes code compilation, it is optional but
               // improves compile time on larger projects
