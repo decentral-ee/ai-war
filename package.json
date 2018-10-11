@@ -5,7 +5,8 @@
   "devDependencies": {
     "@babel/runtime": "^7.1.2",
     "react": "^16.5.2",
-    "react-app-polyfill": "^0.1.3"
+    "react-app-polyfill": "^0.1.3",
+    "ai-war-core": "./core"
   },
   "license": "ISC",
   "repository": "https://github.com/decentral-ee/ai-war"

@@ -103,12 +103,12 @@ contract AIWarPlatform is GameRoundCallback {
     function createGameRound(
         GameEvent gameEvent,
         Game game,
-        uint expectedNumberOfPlayers) public {
+        uint8 nSides) public {
         GameEventStats storage gameEventStats = gameEventStatsMapping[gameEvent];
         GameStats storage gameStats  = gameStatsMapping[game];
         require(gameEventStats.registeredSinceBlock != 0, "GameEvent not registered");
         require(gameStats.registeredSinceBlock != 0, "Game not registered");
-        GameRound gameRound = new GameRound(this, gameEvent, game, expectedNumberOfPlayers);
+        GameRound gameRound = new GameRound(this, gameEvent, game, nSides);
         gameRound.transferOwnership(msg.sender);
         gameRoundInfoMapping[gameRound].gameEvent = gameEvent;
         gameRoundInfoMapping[gameRound].game = game;

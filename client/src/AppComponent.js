@@ -21,12 +21,12 @@ class AppComponent extends Component {
             const latestBlockNumber = await web3.eth.getBlockNumber();
             const f = (toBlockNumber) => {
                 const fromBlockNumber = Math.max(0, toBlockNumber - BLOCK_RANGE);
-                console.log(`getNPastLogs ${fromBlockNumber}:${toBlockNumber} ${events.length} ${topics}`);
+                console.log(`getNPastLogs ${fromBlockNumber}:${toBlockNumber}:${latestBlockNumber} ${events.length}`);
                 if (toBlockNumber < 0 ||
-                    fromBlockNumber <= 0 ||
                     latestBlockNumber - fromBlockNumber > MAXIMUM_BLOCK_HISTORY) {
-                    return resolve(events);
+                    return resolve(events.reverse());
                 }
+                console.log(` web3.eth.getPastLogs ${topics}`)
                 web3.eth.getPastLogs({
                     address,
                     topics: topics,
@@ -38,7 +38,7 @@ class AppComponent extends Component {
                     events = events.concat(result);
                     if (events.length >= n) {
                         events.slice(0, MAXIMUM_BLOCK_HISTORY);
-                        resolve(events);
+                        resolve(events.reverse());
                     } else {
                         f(fromBlockNumber - 1);
                     }

@@ -165,7 +165,7 @@ module.exports = {
       // Make sure your source files are compiled, as they will not be processed in any way.
       new ModuleScopePlugin(paths.appSrc, [paths.appPackageJson]),
     ],
-    symlinks: false
+    symlinks: false,
   },
   module: {
     strictExportPresence: true,
@@ -217,7 +217,7 @@ module.exports = {
           // The preset includes JSX, Flow, and some ESnext features.
           {
             test: /\.(js|jsx)$/,
-            include: paths.appSrc, 
+            include: paths.appSrc,
             use: [
               // This loader parallelizes code compilation, it is optional but
               // improves compile time on larger projects

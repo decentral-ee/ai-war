@@ -27,12 +27,29 @@ function ContractTester(testsuite, options) {
         console.log(`#### Test case ended: ${testsuite.currentTest.title}\n`);
     }
 
+
     this.wei2ether = function (wei) {
         return web3.fromWei(wei, "ether");
     }
 
     this.getUsedGas = function(acc) {
         return gasCounter[acc];
+    }
+
+    this.digestGameRoundStatus = async function (game, round, gameDataVisualizer) {
+        const syncedTurns = (await round.getSyncedTurns.call()).toNumber();
+        const gameOverReason = (await round.getGameOverReason.call()).toNumber();
+        const causingSide = (await round.getCausingSide.call()).toNumber();
+        console.log(`------------------------------------------------------`);
+        console.log(`Round synced number of turns: ${syncedTurns}`);
+        const gameData = await round.getGameData.call();
+        gameDataVisualizer(gameData);
+        if (gameOverReason) {
+            const gameOverReasonStr = await game.decodeGameOverReason.call(gameOverReason);
+            console.log(`Game over caused by player ${causingSide}: ${gameOverReasonStr}`);
+        }
+        console.log(`------------------------------------------------------`);
+        return {syncedTurns, gameOverReason, causingSide};
     }
 
     this.createContract = async function (topic, contract) {

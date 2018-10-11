@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import GameContract from "../../../../core/build/contracts/Game.json";
-import GameRoundContract from "../../../../core/build/contracts/GameRound.json";
+import GameContract from "ai-war-core/build/contracts/Game.json";
+import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
 import gameUtils from '../../utils';
 import './TicTacToeGameCanvas.css';
 
@@ -8,16 +8,13 @@ class TicTacToeGameCanvas extends Component {
     game = null;
     round = null;
     state = {
-        boardData: [],
-        state: 2,
-        gameOverCausingSide: 0,
-        gameOverReasonStr: ""
+        boardData: []
     };
 
     async componentDidMount() {
         const GameRound = this.props.appComponent.getTruffleContract(GameRoundContract);
         const Game = this.props.appComponent.getTruffleContract(GameContract);
-        this.round = await GameRound.at(this.props.gameRoundAddress);
+        this.round = await GameRound.at(this.props.appComponent.state.gameRoundAddress);
         this.game = await Game.at(await this.round.getGame.call());
         this.refreshBoard();
     }
@@ -35,21 +32,14 @@ class TicTacToeGameCanvas extends Component {
             //console.log("refreshBoard", x, y, move.data.toNumber());
             boardData[y][x] = side;
         });
-        const state = (await this.round.getState.call()).toNumber();
-        let gameOverCausingSide, gameOverReasonStr;
-        if (state === 3) {
-            gameOverCausingSide = (await this.round.getCausingSide.call()).toNumber();
-            const gameOverReason = (await this.round.getGameOverReason.call()).toNumber();
-            gameOverReasonStr = await this.game.decodeGameOverReason.call(gameOverReason);
-        }
-        this.setState({ boardData, state, gameOverCausingSide, gameOverReasonStr });
+        this.setState({ boardData });
     }
 
     async makeMove(x, y) {
         const web3 = this.props.app.web3;
         const moveData = gameUtils.createMoveData(x, y);
         const player = this.props.app.state.accounts[0];
-        const betSize = web3.utils.toWei("0.1", "ether");
+        const betSize = web3.utils.toWei("1.0", "ether");
         const side = await this.round.getPlayer.call(1) === player ? 1 : 2;
         console.log("makeMove", side, moveData);
         await this.round.makeMove(side, moveData, betSize, betSize, false, 0,  { from: player });
@@ -87,23 +77,6 @@ class TicTacToeGameCanvas extends Component {
             }
             board.push(<tr key={y}>{row}</tr>);
         }
-        let gameStateControls;
-        if (this.state.gameOverCausingSide) {
-            gameStateControls = <div>
-                <span className="text-info">
-                    Game Over: {this.state.gameOverReasonStr}, caused by {this.state.gameOverCausingSide}
-                </span>
-                <br/>
-                <button className="btn btn-default" onClick={ this.settlePayout.bind(this) }>
-                    Settle Payout
-                </button>
-            </div>;
-        } else {
-            gameStateControls =
-                <button className="btn btn-default" onClick={ this.checkWinner.bind(this) }>
-                    Check Winner
-                </button>;
-        }
         return (
             <div className="container">
                 <button className="btn btn-default" onClick={ this.refreshBoard.bind(this) }>
@@ -114,7 +87,6 @@ class TicTacToeGameCanvas extends Component {
                         {board}
                     </tbody>
                 </table>
-                {gameStateControls}
             </div>
         );
     }

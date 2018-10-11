@@ -1,14 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
-import GameContract from "./core/build/contracts/Game.json";
-import GameRoundContract from "./core/build/contracts/GameRound.json";
+import GameContract from "ai-war-core/build/contracts/Game.json";
+import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
 
 class Game extends AppComponent {
     Game = null
     GameRound = null
     game = null
-    state = { gameName: null, latestRounds: [] }
+    state = {
+        gameName: null,
+        latestRounds: []
+    }
 
     constructor(props) {
         super(props);
@@ -62,11 +65,12 @@ class Game extends AppComponent {
         let listRounds = () => {
             let v = [];
             this.state.latestRounds.forEach(r => {
-                v.push(<tr key={r.address}>
-                    <td></td>
-                    <td>{r.state}</td>
-                    <td><Link to={ `/r/${r.address}` }>{r.address}</Link></td>
-                </tr>);
+                v.push(
+                    <tr key={r.address}>
+                        <td></td>
+                        <td>{r.state}</td>
+                        <td><Link to={ `/r/${r.address}` }>{r.address}</Link></td>
+                    </tr>);
             });
             return (
                 <div className="container">
@@ -89,7 +93,6 @@ class Game extends AppComponent {
 
         return (
             <div>
-
                 <h2 className="text-center">{ `${this.state.gameName} ` }</h2>
                 <button className="btn btn-default" onClick={ this.createNewRound }>Create New Round</button>
                 <button className="btn btn-default" onClick={ this.refreshLatestRounds }>

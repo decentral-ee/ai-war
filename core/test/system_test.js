@@ -4,16 +4,16 @@ const GameRoundContract = artifacts.require("GameRound");
 const RiggedGameContract = artifacts.require("RiggedGame");
 const ContractTester = require('./contract_tester');
 
-contract('GameRound test cases', function(accounts) {
+contract('System test cases', function(accounts) {
     const MAXIMUM_BET_SIZE_FOR_ALL = web3.toWei(100, "ether");
     const INITIAL_MAXIMUM_BET_SIZE = web3.toWei(10, "ether");
     const INITIAL_BET_SIZE = 1;
+    const player1 = accounts[0];
+    const player2 = accounts[1];
+    const creator = accounts[2];
     let t;
     let game;
     let platform;
-    let player1 = accounts[0];
-    let player2 = accounts[1];
-    let creator = accounts[2];
 
     before(async function () {
         t = new ContractTester(this, {
@@ -39,18 +39,10 @@ contract('GameRound test cases', function(accounts) {
         t.afterEachTest();
     })
 
-    async function digestGameRoundStatus(game, round) {
-        const syncedTurn = (await round.getSyncedTurn.call()).toNumber();
-        const gameOverReason = (await round.getGameOverReason.call()).toNumber();
-        const causingSide = (await round.getCausingSide.call()).toNumber();
-        console.log(`------------------------------------------------------`);
-        console.log(`Round synced turn at ${syncedTurn}`);
-        if (gameOverReason) {
-            gameOverReasonStr = await game.decodeGameOverReason.call(gameOverReason);
-            console.log(`Game over caused by player ${causingSide}: ${gameOverReasonStr}`);
-        }
-        console.log(`------------------------------------------------------`);
-        return {syncedTurn, gameOverReason, causingSide};
+    async function digestGameRoundStatus(round) {
+        return await t.digestGameRoundStatus(
+            game, round,
+            gameData => console.log(`gameData ${gameData}`));
     }
 
     async function setupTypicalGameRound(options) {
@@ -69,7 +61,7 @@ contract('GameRound test cases', function(accounts) {
 
         // create game round
         let roundAddress = (await t.sendTransaction('platform.createGameRound', platform.createGameRound,
-            gameEvent.address, game.address, 2 /* expectedNumberOfPlayers */,
+            gameEvent.address, game.address, 2 /* nSides */,
             { from: (options.createByPlayer1 ? player1 : creator) })).logs[0].address;
         assert.notEmpty(roundAddress);
         let round = GameRoundContract.at(roundAddress);
@@ -122,14 +114,14 @@ contract('GameRound test cases', function(accounts) {
 
     async function playerRiggedGameRound(gameEvent, round) {
         await t.sendTransaction('game rig', game.rig,
-            1/* gameOverReason.HAS_WINNER */, 2/*causingSide*/, 0/*gameViolationReason*/,
+            1/* gameOverReason.HAS_WINNER */, 2/*causingSide*/, 0 /*gameViolationReason*/,
             { from: creator });
         await t.sendTransaction(`round.makeMove 1`, round.makeMove,
             1, 0 /* moveData */, INITIAL_MAXIMUM_BET_SIZE, INITIAL_BET_SIZE, false, 0, { from: player1 });
 
         await t.sendTransaction("round.syncGameData 0", round.syncGameData, 1, { from: creator });
-        gameStatus = await digestGameRoundStatus(game, round);
-        assert.equal(gameStatus.syncedTurn, 1);
+        gameStatus = await digestGameRoundStatus(round);
+        assert.equal(gameStatus.syncedTurns, 1);
         assert.equal(gameStatus.gameOverReason, 1);
         assert.equal(gameStatus.causingSide, 2);
         assert.equal((await round.getState.call()).toNumber(), 3 /* round.State.Ended */);
@@ -191,7 +183,7 @@ contract('GameRound test cases', function(accounts) {
         await playerRiggedGameRound(setup.gameEvent, setup.round);
     })
 
-    it("an unfinished tictactoe game round", async function() {
+    it("an unfinished game round", async function() {
         const roundsStartedByGame = (await platform.getGameRoundStartedByGame(game.address)).toNumber();
         const roundsEndedByGame = (await platform.getGameRoundEndedByGame(game.address)).toNumber();
 
