@@ -30,23 +30,24 @@ contract RiggedGame is Game {
         riggedGameViolationReason = gameViolationReason;
     }
 
-    function decodeGameViolationReason(uint gameOverReason) public view returns (string reason) {
-        if (gameOverReason == uint(GameViolationReasons.VIOLATION_RIGGED)) {
+    function decodeGameViolationReason(uint gameViolationReason) public view returns (string reason) {
+        if (gameViolationReason == uint(GameViolationReasons.VIOLATION_RIGGED)) {
             reason = "Game violation: rigged";
         } else {
-            reason = "Invalid move: unknown reason";
+            reason = "Unknown reason";
         }
     }
 
     function syncGameData(
+        uint8 /* nSides */,
         bytes /*data*/, uint16[] /*moves*/,
-        uint previousTurn, uint /*toTurn*/) external view returns (
+        uint /* fromTurn */, uint untilTurn) external view returns (
             bytes /*newData*/,
-            uint syncedTurn,
+            uint syncedTurns,
             uint gameOverReason,
             uint causingSide,
             uint gameViolationReason) {
-        syncedTurn = previousTurn + 1;
+        syncedTurns = untilTurn;
         gameOverReason = riggedGameOverReason;
         causingSide = riggedCausingSide;
         gameViolationReason = riggedGameViolationReason;

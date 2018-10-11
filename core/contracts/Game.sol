@@ -19,11 +19,22 @@ contract Game {
     uint public defaultNumberOfPlayers;
     uint public maximumNumberOfPlayers;
 
-    function decodeGameViolationReason(uint gameOverReason) public view returns (string reason);
+    function decodeGameViolationReason(uint gameViolationReason) public view returns (string reason);
 
+    /**
+     * Sync game moves and returns new game data
+     *
+     * @param data - current game data
+     * @param moves - array of moves indexed by turn index
+     * @param fromTurn - sync moves from the turn
+     * @param untilTurn - sync moves until this turn (exclusive)
+     *
+     * @return newData - new game data
+     */
     function syncGameData(
+        uint8 nSides,
         bytes data, uint16[] moves,
-        uint previousTurn, uint toTurn) external view returns (
+        uint fromTurn, uint untilTurn) external view returns (
             bytes newData,
             uint syncedTurn,
             uint gameOverReason,

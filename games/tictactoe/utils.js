@@ -1,3 +1,5 @@
+'use strict';
+
 const SIDE_SYMBOLS = {0:'.',1:'x',2:'o'};
 
 function createMoveData(x, y) {

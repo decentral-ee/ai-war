@@ -34,7 +34,7 @@ library GameRoundLib {
         State state;
 
         mapping(uint => address) invitations;
-        uint expectedNumberOfPlayers;
+        uint8 nSides;
         mapping(uint => PlayerData) players;
         uint joinedPlayers;
 
@@ -45,10 +45,17 @@ library GameRoundLib {
          */
         uint16[] moves;
 
+        /**
+         * Secret move hashes
+         *
+         * turn -> secret move
+         */
+        mapping (uint => bytes32) secretMoveHashes;
+
         //
         // Game data syncs
         //
-        uint syncedTurn;
+        uint syncedTurns;
 
         bytes gameData;
 
@@ -61,6 +68,8 @@ library GameRoundLib {
 
     function getMove(GameRoundData storage self, uint turn) external view returns (uint8 side, uint16 data) {
         require(turn < self.moves.length, "No such turn data");
+        bytes32 secretMove = self.secretMoveHashes[turn];
+        require(secretMove == bytes32(0), "It is still a secret move");
         uint16 move = self.moves[turn];
         side = (uint8)(move >> 12);
         data = move & 0xFFF;
@@ -71,15 +80,15 @@ library GameRoundLib {
         GameRoundCallback cb,
         GameEvent gameEvent,
         Game game,
-        uint expectedNumberOfPlayers) external {
+        uint8 nSides) external {
         self.cb = cb;
         self.gameEvent = gameEvent;
         self.game = game;
         self.state = State.Preparing;
 
-        self.expectedNumberOfPlayers = expectedNumberOfPlayers;
-        require(self.expectedNumberOfPlayers >= game.minimalNumberOfPlayers()
-            && self.expectedNumberOfPlayers <= game.maximumNumberOfPlayers(),
+        self.nSides = nSides;
+        require(self.nSides >= game.minimalNumberOfPlayers()
+            && self.nSides <= game.maximumNumberOfPlayers(),
             "Invalid number of players expected");
 
         uint initialDataLength = game.initialData().length;
@@ -105,7 +114,7 @@ library GameRoundLib {
         address player) external {
         require(self.state == State.Preparing, "Game has already been configured");
         require(self.invitations[side] == address(0), "Player has already been invited");
-        require(side <= self.expectedNumberOfPlayers, "Expecting less players");
+        require(side <= self.nSides, "Expecting less players");
         self.invitations[side] = player;
     }
 
@@ -122,7 +131,7 @@ library GameRoundLib {
         uint currentBetSize) external {
         require(side > 0, "Side has to be greater than 0");
         require((self.state == State.Ready) || (self.state == State.Preparing), "Game has started");
-        require(side <= self.expectedNumberOfPlayers, "Expecting less players");
+        require(side <= self.nSides, "Expecting less players");
         address invitedPlayer = self.invitations[side];
         address player = msg.sender;
         if (invitedPlayer == address(0)) {
@@ -146,7 +155,7 @@ library GameRoundLib {
         playerData.takeOverFee = 0;
 
         ++self.joinedPlayers;
-        if (self.joinedPlayers == self.expectedNumberOfPlayers) {
+        if (self.joinedPlayers == self.nSides) {
             self.state = State.InProgress;
             if (self.cb != address(0)) {
                 self.cb.gameRoundStarted(self.gameEvent, self.game, this);
@@ -157,7 +166,7 @@ library GameRoundLib {
 
     function makeMove(
         GameRoundData storage self,
-        uint side, uint16 data,
+        uint side, uint16 moveData,
         uint maximumBetSize,
         uint currentBetSize,
         bool allowTakeOver,
@@ -166,21 +175,53 @@ library GameRoundLib {
         PlayerData storage playerData = self.players[side];
         require(playerData.player != address(0), "Invalid side");
         require(playerData.player == msg.sender, "Unauthorized player");
-        // validate betting parameters
-        if (playerData.maximumBetSize != maximumBetSize) {
-            playerData.maximumBetSize = maximumBetSize;
-        }
-        if (playerData.currentBetSize != currentBetSize) {
-            playerData.currentBetSize = currentBetSize;
-        }
-        if (playerData.allowTakeOver != allowTakeOver) {
-            playerData.allowTakeOver = allowTakeOver;
-        }
-        if (playerData.takeOverFee != takeOverFee) {
-            playerData.takeOverFee = takeOverFee;
-        }
+        validateNewBets(
+            playerData,
+            maximumBetSize,
+            currentBetSize,
+            allowTakeOver,
+            takeOverFee);
         // create the move
-        self.moves.push((uint16(side) << 12) | (data & 0xFFF));
+        self.moves.push((uint16(side) << 12) | (moveData & 0xFFF));
+    }
+
+    function makeSecretMove(
+        GameRoundData storage self,
+        uint side, bytes32 moveHash,
+        uint maximumBetSize,
+        uint currentBetSize,
+        bool allowTakeOver,
+        uint takeOverFee) external {
+        uint turn = self.moves.length;
+        require(self.state == State.InProgress, "Game is not in progress");
+        PlayerData storage playerData = self.players[side];
+        require(playerData.player != address(0), "Invalid side");
+        require(playerData.player == msg.sender, "Unauthorized player");
+        validateNewBets(
+            playerData,
+            maximumBetSize,
+            currentBetSize,
+            allowTakeOver,
+            takeOverFee);
+        self.moves.push((uint16(side) << 12) | 0);
+        self.secretMoveHashes[turn] = moveHash;
+    }
+
+    function revealSecretMove(
+        GameRoundData storage self,
+        uint turn,
+        uint16 moveData, uint256 salt) external {
+        require(turn < self.moves.length, "No such turn data");
+        bytes32 secretMoveHash = self.secretMoveHashes[turn];
+        require(secretMoveHash != 0, "There is no secret move for that turn");
+        uint16 move = self.moves[turn];
+        uint8 side = (uint8)(move >> 12);
+        PlayerData memory playerData = self.players[side];
+        require(playerData.player == msg.sender, "Unauthorized player");
+        bytes32 secretMoveHash2 = keccak256(abi.encodePacked(moveData, salt));
+        require(secretMoveHash2 == secretMoveHash, "Secret move hashes do not match");
+        self.moves[turn] = (uint16(side) << 12) | moveData;
+        delete self.secretMoveHashes[turn];
     }
 
     function takeOver(
@@ -206,24 +247,39 @@ library GameRoundLib {
         playerData.takeOverFee = takeOverFee;
     }
 
-    function syncGameData(GameRoundData storage self, uint16 untilTurn) external {
-        require(untilTurn > self.syncedTurn, "Already synced to the specified turn");
+    function syncGameData(GameRoundData storage self, uint untilTurn) external {
+        require(untilTurn >= self.syncedTurns, "Already synced to the specified turn");
         require(untilTurn <= self.moves.length, "Not enough move data to sync");
+
+        uint i;
+
+        // check if there is any secret moves
+        for (i = self.syncedTurns; i < untilTurn; ++i) {
+            require(self.secretMoveHashes[i] == bytes32(0),
+                "Some secret move not revealed yet");
+        }
+
         (bytes memory newData,
-        uint syncedTurn,
+        uint syncedTurns,
         uint gameOverReason,
         uint causingSide,
         uint gameViolationReason) = self.game.syncGameData(
+            self.nSides,
             self.gameData, self.moves,
-            self.syncedTurn, untilTurn);
-        uint dataLength = self.gameData.length;
-        for (uint i = 0; i < dataLength; ++i) {
-            if (newData[i] != self.gameData[i]) {
-                self.gameData[i] = newData[i];
+            self.syncedTurns, untilTurn);
+
+        if (self.syncedTurns != syncedTurns) {
+            self.syncedTurns = syncedTurns;
+
+            // update game data
+            uint newDataLength = newData.length;
+            for (i = 0; i < newDataLength; ++i) {
+                if (newData[i] != self.gameData[i]) {
+                    self.gameData[i] = newData[i];
+                }
             }
-        }
-        if (self.syncedTurn != syncedTurn) {
-            self.syncedTurn = syncedTurn;
+
+            // update game states
             if (self.gameOverReason != gameOverReason) {
                 self.gameOverReason = gameOverReason;
                 self.causingSide = causingSide;
@@ -259,6 +315,27 @@ library GameRoundLib {
         self.gameEvent.unlockAllBalance(self.players[1].player);
         self.gameEvent.unlockAllBalance(self.players[2].player);
     }
+
+    function validateNewBets(
+        PlayerData playerData,
+        uint maximumBetSize,
+        uint currentBetSize,
+        bool allowTakeOver,
+        uint takeOverFee) private pure {
+        // validate betting parameters
+        if (playerData.maximumBetSize != maximumBetSize) {
+            playerData.maximumBetSize = maximumBetSize;
+        }
+        if (playerData.currentBetSize != currentBetSize) {
+            playerData.currentBetSize = currentBetSize;
+        }
+        if (playerData.allowTakeOver != allowTakeOver) {
+            playerData.allowTakeOver = allowTakeOver;
+        }
+        if (playerData.takeOverFee != takeOverFee) {
+            playerData.takeOverFee = takeOverFee;
+        }
+    }
 }
 
 contract GameRound is Owned {
@@ -274,7 +351,7 @@ contract GameRound is Owned {
     function getMove(uint turn) external view returns (uint8 side, uint16 data) {
         (side, data) = GameRoundLib.getMove(self, turn);
     }
-    function getSyncedTurn() external view returns (uint) { return self.syncedTurn; }
+    function getSyncedTurns() external view returns (uint) { return self.syncedTurns; }
     function getGameData() external view returns (bytes) { return self.gameData; }
     function getGameOverReason() external view returns (uint) { return self.gameOverReason; }
     function getCausingSide() external view returns (uint) { return self.causingSide; }
@@ -287,8 +364,8 @@ contract GameRound is Owned {
         GameRoundCallback cb,
         GameEvent gameEvent,
         Game game,
-        uint expectedNumberOfPlayers) public {
-        self.create(cb, gameEvent, game, expectedNumberOfPlayers);
+        uint8 nSides) public {
+        self.create(cb, gameEvent, game, nSides);
     }
 
     function invitePlayer(
@@ -318,17 +395,39 @@ contract GameRound is Owned {
     }
 
     function makeMove(
-        uint side, uint16 data,
+        uint side, uint16 moveData,
         uint maximumBetSize,
         uint currentBetSize,
         bool allowTakeOver,
         uint takeOverFee) external {
         self.makeMove(
-            side, data,
+            side, moveData,
             maximumBetSize,
             currentBetSize,
             allowTakeOver,
             takeOverFee);
+    }
+
+    function makeSecretMove(
+        uint side, bytes32 moveHash,
+        uint maximumBetSize,
+        uint currentBetSize,
+        bool allowTakeOver,
+        uint takeOverFee) external {
+        self.makeSecretMove(
+            side, moveHash,
+            maximumBetSize,
+            currentBetSize,
+            allowTakeOver,
+            takeOverFee);
+    }
+
+    function revealSecretMove(
+        uint turn,
+        uint16 moveData, uint256 salt) external {
+        self.revealSecretMove(
+            turn,
+            moveData, salt);
     }
 
     function takeOver(
@@ -349,7 +448,12 @@ contract GameRound is Owned {
         //
     }*/
 
-    function syncGameData(uint16 untilTurn) external {
+    /**
+     * Sync game data
+     *
+     * @param untilTurn - sync moves until this turn (exclusive)
+     */
+    function syncGameData(uint untilTurn) external {
         self.syncGameData(untilTurn);
     }
 

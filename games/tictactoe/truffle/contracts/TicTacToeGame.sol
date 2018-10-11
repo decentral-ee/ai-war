@@ -29,16 +29,13 @@ contract TicTacToeGame is Game {
         minimalNumberOfPlayers = defaultNumberOfPlayers = maximumNumberOfPlayers = 2;
     }
 
-    /**
-     * @param previousTurn - sync moves from the next turn to this
-     * @param toTurn - sync moves until this turn (inclusive)
-     */
     function syncGameData(
+        uint8 /* nSides */,
         bytes data, uint16[] moves,
-        uint previousTurn, uint toTurn)
+        uint fromTurn, uint untilTurn)
         external view returns (
             bytes memory newData,
-            uint syncedTurn,
+            uint syncedTurns,
             uint gameOverReason,
             uint causingSide,
             uint gameViolationReason) {
@@ -50,41 +47,41 @@ contract TicTacToeGame is Game {
             newData[i] = data[i];
         }
         // trvial cases
-        syncedTurn = previousTurn;
+        syncedTurns = fromTurn;
         causingSide = uint8((data[2] >> 2) & 0x3);
         gameOverReason = uint(data[2] >> 4);
         if (gameOverReason > 0) {
             return;
         }
         // make moves
-        for (i = previousTurn; i < toTurn; ++i) {
+        for (i = fromTurn; i < untilTurn; ++i) {
             (uint causingSide_, uint gameOverReason_, uint gameViolationReason_) = makeMove(newData, i, moves[i]);
             if (gameOverReason_ > 0) {
-                syncedTurn = i + 1;
+                syncedTurns = i + 1;
                 causingSide = causingSide_;
                 gameOverReason = gameOverReason_;
                 gameViolationReason = gameViolationReason_;
                 return;
             }
         }
-        syncedTurn = toTurn;
+        syncedTurns = untilTurn;
     }
 
-    function decodeGameViolationReason(uint gameOverReason) public view returns (string reason){
-       if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER)) {
+    function decodeGameViolationReason(uint gameViolationReason) public view returns (string reason){
+       if (gameViolationReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_SIDE_NUMBER)) {
             reason = "Invalid move data: wrong side number";
-        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_CORDINATES)) {
+        } else if (gameViolationReason == uint(GameViolationReasons.INVALID_MOVE_DATA_WRONG_CORDINATES)) {
             reason = "Invalid move data: invalid coordinates";
-        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_WRONG_TURN)) {
+        } else if (gameViolationReason == uint(GameViolationReasons.INVALID_MOVE_WRONG_TURN)) {
             reason = "Invalid move: wrong turn";
-        } else if (gameOverReason == uint(GameViolationReasons.INVALID_MOVE_CELL_ALREADY_TAKEN)) {
+        } else if (gameViolationReason == uint(GameViolationReasons.INVALID_MOVE_CELL_ALREADY_TAKEN)) {
         reason = "Invalid move: cell is already taken";
         } else {
-            reason = "Game violation: unknown reason";
+            reason = "Unknown reason";
         }
     }
 
-    function makeMove(bytes memory data, uint previousTurn, uint16 move) private pure returns (
+    function makeMove(bytes memory data, uint currentTurn, uint16 move) private pure returns (
             uint causingSide,
             uint gameOverReason,
             uint gameViolationReason
@@ -93,7 +90,7 @@ contract TicTacToeGame is Game {
         (uint xx, uint yy) = toXXYY(x, y);
         if (invalidMoveReason > 0) {
             gameViolationReason = invalidMoveReason;
-        } else if (((previousTurn % 2) == 0 ? 1 : 2) != side) {
+        } else if (((currentTurn % 2) == 0 ? 1 : 2) != side) {
             gameViolationReason = uint(GameViolationReasons.INVALID_MOVE_WRONG_TURN);
         } else if (data[yy] & byte(3 << (xx*2)) > 0) {
             gameViolationReason = uint(GameViolationReasons.INVALID_MOVE_CELL_ALREADY_TAKEN);
@@ -108,7 +105,7 @@ contract TicTacToeGame is Game {
         if (detectWin(data, side)) {
             causingSide = side;
             gameOverReason = uint(GameOverReason.HAS_WINNER);
-        } else if (previousTurn >= 16) {
+        } else if (currentTurn >= 16) {
             causingSide = side;
             gameOverReason = uint(GameOverReason.TIED);
         }
