@@ -30,7 +30,6 @@ class RPSGameCanvas extends Component {
     }
 
     async refreshMoves() {
-        console.log(this.props.appComponent.state, this.state, "!!!");
         const syncedTurns = await this.round.getSyncedTurns();
         const fromTurn = 0;
         const untilTurn = (await this.round.getNumberOfMoves()).toNumber();

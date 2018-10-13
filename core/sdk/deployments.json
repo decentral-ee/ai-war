@@ -2,13 +2,13 @@
     "networks": {
         "3": {
             "AIWarPlatform": {
-                "deployedAddress": "0xf5994698d448be616a31b86dc158d2cda8ce0145"
+                "deployedAddress": "0x1df642a85f86e6c973262f74ff1a168cfed4f1f5"
             },
             "Migrations": {
-                "deployedAddress": "0x91c230cc41fe440893e9adddcc1e3d874ab59ff2"
+                "deployedAddress": "0xcec5eb8e2d6d1523e36f92254c155ddfca7c603d"
             },
             "OpenEtherbetGameEvent": {
-                "deployedAddress": "0x140e19bb012687c017a94288eb7bd061b3838bc3"
+                "deployedAddress": "0x5c596d60fce3d47187ec05949f8ef8aa66b21eb4"
             }
         },
         "5777": {
