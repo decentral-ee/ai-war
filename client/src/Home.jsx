@@ -65,7 +65,7 @@ class Home extends AppComponent {
     render() {
         function GameSummary(props) {
             return (<div key={props.name} className={"col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1 " + props.name}>
-                <Link to={(props.address !== 0x0) ? "/g/" + props.address : "" }>
+                <Link to={(props.address !== 0x0) ? "/g/" + props.address.toLowerCase() : "" }>
                     <button type="button" className="btn btn-primary w-100" disabled={(props.address !== 0x0) ? false : true}>
                     {GameIcon(props.name)}
                     <h3 className="d-inline d-md-block align-middle">{props.name}</h3>

@@ -69,7 +69,7 @@ class Game extends AppComponent {
                     <tr key={r.address}>
                         <td></td>
                         <td>{r.state}</td>
-                        <td><Link to={ `/r/${r.address}` }>{r.address}</Link></td>
+                        <td><Link to={ `/r/${r.address.toLowerCase()}` }>{r.address}</Link></td>
                     </tr>);
             });
             return (
