@@ -43,16 +43,15 @@ class GameRound extends AppComponent {
 
     async refreshState() {
         const web3 = this.props.app.web3;
-        const acc = this.props.app.state.accounts[0];
-        const player = this.props.app.state.accounts[0];
+        const player = this.props.app.state.accounts[0].toLowerCase();
         const numberOfPlayers = await this.gameRound.getNumberOfPlayers.call();
         let playerSide = 0;
         for (let i = 1; i <= numberOfPlayers; ++i) {
-            if (await this.gameRound.getPlayer(i) === acc) playerSide = i;
+            if ((await this.gameRound.getPlayer(i)).toLowerCase() === player) playerSide = i;
         }
         const roundState = (await this.gameRound.getState.call()).toNumber();
         const syncedTurns = (await this.gameRound.getSyncedTurns.call()).toNumber();
-        const isRoundOwner = (await this.gameRound.owner.call()) === acc;
+        const isRoundOwner = ((await this.gameRound.owner.call())).toLowerCase() === player;
         const grantedAllowanceInWei = await this.gameEvent.getGrantedAllowance.call(this.state.gameRoundAddress, player);
         const grantedAllowance = web3.utils.fromWei(grantedAllowanceInWei.toString(), "ether");
         const lockedBalanceInWei = await this.gameEvent.getLockedBalance.call(this.state.gameRoundAddress, player);
@@ -84,23 +83,20 @@ class GameRound extends AppComponent {
 
     async grantAllowance() {
         const web3 = this.props.app.web3;
-        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("1.0", "ether");
-        await this.gameEvent.grantAllowance(this.state.gameRoundAddress, betSize, { from: player });
+        await this.gameEvent.grantAllowance(this.state.gameRoundAddress, betSize, { from: this.state.player });
     }
 
     async joinGame() {
         const web3 = this.props.app.web3;
-        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("1.0", "ether");
-        await this.gameRound.acceptInvitation(2, betSize, betSize, { from: player });
+        await this.gameRound.acceptInvitation(2, betSize, betSize, { from: this.state.player });
     }
 
     async selfInviteAndReady() {
         const web3 = this.props.app.web3;
-        const player = this.props.app.state.accounts[0];
         const betSize = web3.utils.toWei("1.0", "ether");
-        await this.gameRound.selfInviteAndReady(1, betSize, betSize, { from: player });
+        await this.gameRound.selfInviteAndReady(1, betSize, betSize, { from: this.state.player });
     }
 
     async checkWinner() {
