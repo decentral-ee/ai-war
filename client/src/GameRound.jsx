@@ -1,11 +1,11 @@
 import React from "react";
 import AppComponent from './AppComponent';
-import GameEventContract from "ai-war-core/build/contracts/GameEvent.json";
-import GameContract from "ai-war-core/build/contracts/Game.json";
-import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
+import GameEventContract from "./core/build/contracts/GameEvent.json";
+import GameContract from "./core/build/contracts/Game.json";
+import GameRoundContract from "./core/build/contracts/GameRound.json";
 import TicTacToeGameCanvas from './games/tictactoe/react/components/TicTacToeGameCanvas';
 import RPSGameCanvas from './games/rps/react/components/RPSGameCanvas';
-import AIWarCore from "ai-war-core";
+import AIWarCore from "./core/sdk";
 
 
 class GameRound extends AppComponent {

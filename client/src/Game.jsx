@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import AppComponent from './AppComponent';
-import GameContract from "ai-war-core/build/contracts/Game.json";
-import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
+import GameContract from "./core/build/contracts/Game.json";
+import GameRoundContract from "./core/build/contracts/GameRound.json";
 
 class Game extends AppComponent {
     Game = null

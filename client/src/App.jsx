@@ -5,9 +5,9 @@ import GameRound from './GameRound';
 import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 
-import Deployments from "ai-war-core/sdk/deployments.json"
-import AIWarPlatformContract from "ai-war-core/build/contracts/AIWarPlatform.json";
-import OpenEtherbetGameEventContract from "ai-war-core/build/contracts/OpenEtherbetGameEvent.json";
+import Deployments from "./core/sdk/deployments.json"
+import AIWarPlatformContract from "./core/build/contracts/AIWarPlatform.json";
+import OpenEtherbetGameEventContract from "./core/build/contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
 
 import "./App.css";

@@ -3,7 +3,6 @@
   "description": "AIWar client, react based UI",
   "version": "0.1.0",
   "dependencies": {
-    "ai-war-core": "../core",
     "bignumber.js": "^7.2.1",
     "es6-promise": "^4.2.5",
     "react": "^16.4.2",
@@ -25,5 +24,9 @@
     "not op_mini all"
   ],
   "license": "ISC",
-  "repository": "https://github.com/decentral-ee/ai-war"
+  "repository": "https://github.com/decentral-ee/ai-war",
+  "devDependencies": {
+    "@babel/runtime": "^7.1.2",
+    "react-app-polyfill": "^0.1.3"
+  }
 }

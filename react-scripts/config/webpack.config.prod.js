@@ -263,7 +263,7 @@ module.exports = {
           // Process application JS with Babel.
           // The preset includes JSX, Flow, and some ESnext features.
           {
-            test: /\.(js|jsx)$/,
+            test: /\.jsx$/,
             include: paths.appSrc,
             exclude: /\/node_modules\//,
             use: [

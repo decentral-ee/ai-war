@@ -196,6 +196,7 @@ module.exports = {
           },
         ],
         include: paths.appSrc,
+        exclude: [/\/node_modules\//],
       },
       {
         // "oneOf" will traverse all following loaders until one will
@@ -213,11 +214,12 @@ module.exports = {
               name: 'static/media/[name].[hash:8].[ext]',
             },
           },
-          // Process application JS with Babel.
+          // Process application JSX with Babel.
           // The preset includes JSX, Flow, and some ESnext features.
           {
-            test: /\.(js|jsx)$/,
+            test: /\.jsx$/,
             include: paths.appSrc,
+            exclude: [/\/node_modules\//],
             use: [
               // This loader parallelizes code compilation, it is optional but
               // improves compile time on larger projects

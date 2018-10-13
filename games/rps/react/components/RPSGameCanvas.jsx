@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import GameContract from "ai-war-core/build/contracts/Game.json";
-import GameRoundContract from "ai-war-core/build/contracts/GameRound.json";
-import AIWarCore from 'ai-war-core';
+import GameContract from "../../../../core/build/contracts/Game.json";
+import GameRoundContract from "../../../../core/build/contracts/GameRound.json";
+import AIWarCore from '../../../../core/sdk';
 import gameUtils from '../../utils';
 import './RPSGameCanvas.css';
 
