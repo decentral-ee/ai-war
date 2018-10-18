@@ -12,11 +12,9 @@ const GameRound = {
 
     generateSecretMoveSalt: async function () {
         let salt = await promisify(crypto.randomBytes)(32);
-        salt = "0x" + salt.toString('hex');
-        let bn = Web3Utils.toBN(salt);
-        bn = Web3Utils.toHex(bn);
-        console.debug("generateSecretMoveSalt", bn);
-        return bn;
+        let saltHex = "0x" + salt.toString('hex');
+        console.debug("generateSecretMoveSalt", saltHex);
+        return saltHex;
     },
 
     createSecretMoveHash: function (moveData, salt) {
