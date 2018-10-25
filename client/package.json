@@ -4,11 +4,8 @@
   "version": "0.1.0",
   "dependencies": {
     "bignumber.js": "^7.2.1",
-<<<<<<< HEAD
     "dapparatus": "^1.0.24",
-=======
     "es6-promise": "^4.2.5",
->>>>>>> 9b6fbbfe1f343b6c2117f08b1916ae3d165e12ac
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
     "react-redux": "^5.0.7",

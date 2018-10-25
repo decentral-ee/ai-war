@@ -64,14 +64,8 @@ class Home extends AppComponent {
 
     render() {
         function GameSummary(props) {
-<<<<<<< HEAD:client/src/Home.js
-            return (
-              <div className="col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1" >
-                <Link to={(props.address !== 0x0) ? "/g/" + props.address : "" }>
-=======
             return (<div key={props.name} className={"col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1 " + props.name}>
                 <Link to={(props.address !== 0x0) ? "/g/" + props.address.toLowerCase() : "" }>
->>>>>>> 9b6fbbfe1f343b6c2117f08b1916ae3d165e12ac:client/src/Home.jsx
                     <button type="button" className="btn btn-primary w-100" disabled={(props.address !== 0x0) ? false : true}>
                     {GameIcon(props.name)}
                     <h3 className="d-inline d-md-block align-middle">{props.name}</h3>
@@ -82,17 +76,11 @@ class Home extends AppComponent {
 
         const gameList = this.state.gameList.map(i => <GameSummary key={i.name} address={i.address} name={i.name}/>);
         return (
-<<<<<<< HEAD:client/src/Home.js
-          <div className="gameList row">
-          {gameList}
-          </div>
-=======
             <div>
                 <div className="gameList row">
                     {gameList}
                 </div>
             </div>
->>>>>>> 9b6fbbfe1f343b6c2117f08b1916ae3d165e12ac:client/src/Home.jsx
         );
     }
 }

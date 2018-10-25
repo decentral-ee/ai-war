@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import Home from './Home';
 import Game from './Game';
 import GameRound from './GameRound';
-import { Switch, Route, Redirect } from 'react-router-dom';
+import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 import Wallet from "./components/wallet"
 
@@ -18,12 +18,7 @@ class App extends Component {
     platform = null;
     gameEvent = null;
 
-    state = {
-        accounts: null,
-        gameCredit: 0,
-        lockedDeposit:0,
-        newDeposit: ""
-    };
+    state = {};
 
     async componentDidMount() {
         try {
@@ -40,8 +35,6 @@ class App extends Component {
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
             OpenEtherbetGameEvent.setProvider(this.web3.currentProvider);
             this.gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
-            //get ETH value exchange rate from CMC API
-            this.setState({ web3, platform, gameEvent});
         } catch (error) {
             console.error(error);
         }
