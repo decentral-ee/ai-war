@@ -6,7 +6,7 @@ import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 import Wallet from "./components/wallet"
 
-import Deployments from "./core/sdk/deployments.json"
+import Deployments from "./core/sdk/deployments.js"
 import AIWarPlatformContract from "./core/build/contracts/AIWarPlatform.json";
 import OpenEtherbetGameEventContract from "./core/build/contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
