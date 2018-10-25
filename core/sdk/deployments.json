@@ -2,24 +2,24 @@
     "networks": {
         "3": {
             "AIWarPlatform": {
-                "deployedAddress": "0xf5994698d448be616a31b86dc158d2cda8ce0145"
+                "deployedAddress": "0x1df642a85f86e6c973262f74ff1a168cfed4f1f5"
             },
             "Migrations": {
-                "deployedAddress": "0x91c230cc41fe440893e9adddcc1e3d874ab59ff2"
+                "deployedAddress": "0xcec5eb8e2d6d1523e36f92254c155ddfca7c603d"
             },
             "OpenEtherbetGameEvent": {
-                "deployedAddress": "0x140e19bb012687c017a94288eb7bd061b3838bc3"
+                "deployedAddress": "0x5c596d60fce3d47187ec05949f8ef8aa66b21eb4"
             }
         },
         "5777": {
             "AIWarPlatform": {
-                "deployedAddress": "0x34bf29ba0f4193a6f0f70aceb47b969a2666c2d0"
+                "deployedAddress": "0xe11cdd375f83749473d7b8fc3101d5d8ea2ddbff"
             },
             "Migrations": {
-                "deployedAddress": "0x1dca09e3dbc9adec8a71e6c5390cace6924ae767"
+                "deployedAddress": "0xdd4416807df2a1ecd16e6bc19a9836a36fb52432"
             },
             "OpenEtherbetGameEvent": {
-                "deployedAddress": "0xba20f620e0fd9c705ec81fb3e3040b5e45e40215"
+                "deployedAddress": "0x506e5fcc539ee52cc6428bf4b9a8184507bfe55b"
             }
         }
     }
