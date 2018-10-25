@@ -18,25 +18,32 @@ class App extends Component {
     platform = null;
     gameEvent = null;
 
-    state = {};
+    state = {
+        accounts: [],
+        initialized: false
+    };
 
     async componentDidMount() {
         try {
             // Get network provider and web3 instance.
-            const web3 = await getWeb3();
-            const networkId = await web3.eth.net.getId();
+            this.web3 = await getWeb3();
+
+            const accounts = await this.web3.eth.getAccounts();
+
+            const networkId = await this.web3.eth.net.getId();
             const deployments = Deployments.networks[networkId];
             if (!deployments) throw new Error(`Contracts not deployed to the network ${networkId}`);
-            console.log(`Deployed contracts:`, JSON.stringify(deployments)); 
+            console.log(`Deployed contracts:`, JSON.stringify(deployments));
             const AIWarPlatform = truffleContract(AIWarPlatformContract);
             AIWarPlatform.setProvider(this.web3.currentProvider);
             this.platform = await AIWarPlatform.at(deployments.AIWarPlatform.deployedAddress);
-
             const OpenEtherbetGameEvent = truffleContract(OpenEtherbetGameEventContract);
             OpenEtherbetGameEvent.setProvider(this.web3.currentProvider);
             this.gameEvent = await OpenEtherbetGameEvent.at(deployments.OpenEtherbetGameEvent.deployedAddress);
+
+            this.setState({ initialized: true, accounts });
         } catch (error) {
-            console.error(error);
+            console.error("App loading error:", error);
         }
     }
 
@@ -45,7 +52,7 @@ class App extends Component {
     //took out "refreshWallet"
 
     render() {
-        if (!this.web3) {
+        if (!this.state.initialized) {
             return <div>Loading Web3, accounts, and contract...</div>;
         }
         return (
@@ -64,7 +71,7 @@ class App extends Component {
                     </div>
                     {/* removed wallet hmtl
                       ideally wallet should take {children}, with the different sections. This way I can pass it the gamestate*/}
-                    <Wallet web3={this.state.web3} gameEvent={this.state.gameEvent}/>
+                    <Wallet web3={this.web3} gameEvent={this.gameEvent}/>
                 </div>
             </Route>
         );
