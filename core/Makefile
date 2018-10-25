@@ -11,11 +11,13 @@ test:
 
 .PHONY: build clean test
 
-migrate-reset:
+migrate-reset: extract-deployments
 	npm run truffle -- migrate --reset
-	npm run truffle -- exec truffle-scripts/extract-deployments.js
 
-.PHONY: migrate-reset
+extract-deployments:
+	npm run truffle -- exec truffle-scripts/extract-deployments.js $(PWD)/sdk/deployments.${NETWORK}.json
+
+.PHONY: migrate-reset extract-deployments
 
 prepare:
 	npm install

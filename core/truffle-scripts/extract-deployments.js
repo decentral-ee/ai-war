@@ -6,9 +6,9 @@ const CONTRACTS = [
     'Migrations',
     'AIWarPlatform',
     'OpenEtherbetGameEvent'
-]
+];
 
-const DEPLOYMENTS_FILE=path.resolve(__dirname, '..', 'sdk', 'deployments.json');
+const DEPLOYMENTS_FILE=process.argv[process.argv.length-1];
 
 function extractForContract(deployments, networkId, contractName) {
     return jq
@@ -26,7 +26,7 @@ function extractForContract(deployments, networkId, contractName) {
 
 module.exports = function(callback) {
     try {
-        deployments = JSON.parse(fs.readFileSync(DEPLOYMENTS_FILE));
+        deployments = {};
 
         web3.version.getNetwork(async (e, networkId) => {
             if (e) return callback(e);
