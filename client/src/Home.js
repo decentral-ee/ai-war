@@ -67,7 +67,8 @@ class Home extends AppComponent {
 
     render() {
         function GameSummary(props) {
-            return (<div className={"col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1 " + props.name}>
+            return (
+              <div className="col-12 col-sm-6 col-md-4 px-4 py-1 p-sm-1" >
                 <Link to={(props.address !== 0x0) ? "/g/" + props.address : "" }>
                     <button type="button" className="btn btn-primary w-100" disabled={(props.address !== 0x0) ? false : true}>
                     {GameIcon(props.name)}
@@ -77,13 +78,11 @@ class Home extends AppComponent {
             </div>);
         }
 
-        const gameList = this.state.gameList.map(i => <GameSummary key={i} address={i.address} name={i.name}/>);
+        const gameList = this.state.gameList.map(i => <GameSummary key={i.name} address={i.address} name={i.name}/>);
         return (
-            <div>
-                <div className="gameList row">
-                {gameList}
-                </div>
-            </div>
+          <div className="gameList row">
+          {gameList}
+          </div>
         );
     }
 }

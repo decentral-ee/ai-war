@@ -36,6 +36,10 @@ body{
   text-align: center;
 }
 
+.round > *{
+  border-radius:50%;
+  overflow: hidden;
+}
 /* gamelist styles */
 
 .gameList i{

@@ -4,9 +4,12 @@
   "private": true,
   "dependencies": {
     "bignumber.js": "^7.2.1",
+    "dapparatus": "^1.0.24",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
+    "react-redux": "^5.0.7",
     "react-router-dom": "^4.3.1",
+    "redux": "^4.0.1",
     "truffle-contract": "^4.0.0-next.0",
     "web3": "^1.0.0-beta.35"
   },
