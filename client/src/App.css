@@ -77,11 +77,7 @@ a:focus, a:hover{
     background: #eeeeee;
     color: #111111;
 }
-.btn-default {
-  margin:3px;
-}
-
-.btn:disabled{
+.btn-primary:disabled{
   background: #cccccc;
   color: #222222;
 }
@@ -103,7 +99,7 @@ a:focus, a:hover{
   color:#dddddd;
   border:none;
 }
-.wallet button{
+.wallet .btn{
   border-radius:0;
   background-color:#581d8b;
   color:#ffffff;
@@ -112,7 +108,7 @@ a:focus, a:hover{
 .wallet .section h6, .wallet .section h5{
   line-height:0.7;
 }
-.wallet button:focus, .wallet button:hover{
+.wallet .btn:focus, .wallet .btn:hover{
   background-color:#dddddd;
   color:#581d8b;
 }

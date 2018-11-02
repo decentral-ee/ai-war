@@ -1,37 +1,66 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import Exchange from "./../utils/exchange.jsx";
-import { Metamask, Gas, Transactions, Events, Scaler, Blockie, Button } from "dapparatus"
-
+import { Blockie } from "dapparatus"
 export default class Wallet extends Component {
     constructor(props) {
         super(props);
+        this.walletArea = React.createRef();
         this.depositEther = this.depositEther.bind(this);
         this.refreshWallet = this.refreshWallet.bind(this);
         this.withdrawEther = this.withdrawEther.bind(this);
         this.state = {
             networkString: null,
-            accounts: '0x61157Ba1634c09805a5e320577c553F13af4F3E9',
+            accounts: null,
             gameCredit: 0,
             lockedDeposit:0,
             newDeposit: 0,
-            balance: 0
+            balance: 0,
+            walletHeight: 100
         };
     }
-    async componentDidMount() {
-        try {
-            // Get network provider and web3 instance.
-            this.setState({loaded : false, loading : true});
-            const web3 = this.props.web3;
-            const networkString = await web3.eth.net.getNetworkType()
-            let accounts = await web3.eth.getAccounts();
-            accounts = accounts[0];
-            this.setState({ web3, networkString, accounts});
-            this.setState({loaded : true, loading : false});
-            this.refreshWallet();
-        } catch (error) {
-            console.error(error);
+    componentWillReceiveProps(props) {
+      const { helper } = this.props;
+      // Get network provider and web3 instance.
+      if (helper === 'MetaMask'){
+        this.refreshWallet();
+      }
+    }
+
+    componentDidMount() {
+      const { helper } = this.props;
+      // Get network provider and web3 instance.
+      if (helper === 'MetaMask'){
+        this.refreshWallet();
+      }
+      const walletHeight = this.walletArea.current && this.walletArea.current.clientHeight;
+      this.setState({walletHeight});
+    }
+    async refreshWallet(e) {
+      if (e) e.preventDefault();
+      const {web3, gameEvent } = this.props;
+      if(!this.state.networkString){
+        const networkString = await web3.eth.net.getNetworkType();
+        this.setState({networkString});
+      }
+      if( !this.state.accounts ){
+        const accounts= await web3.eth.getAccounts();
+        if (accounts.length > 0 ) {
+          this.setState({accounts});
         }
+      }
+      if(this.state.accounts && this.state.accounts.length>0){
+        const {accounts} = this.state;
+        const bal = await web3.eth.getBalance(accounts[0]);
+        const gameCreditInWei = await gameEvent.getDepositAmount.call(accounts[0]);
+        const lockedDepositInWei = await gameEvent.getTotalLockedBalance.call(accounts[0]);
+        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
+        const balance = web3.utils.fromWei(bal.toString(), 'ether');
+        const lockedDeposit = web3.utils.fromWei(lockedDepositInWei.toString(), 'ether');
+        this.setState({ gameCredit, balance, lockedDeposit});
+      }
+      await new Promise(resolve => setTimeout(resolve,777));
+      this.refreshWallet();
     }
     handleNewDeposit = (e)=> {
       const val = e.target.value;
@@ -64,28 +93,18 @@ export default class Wallet extends Component {
           from: this.state.accounts,
         });
     }
-    async refreshWallet(e) {
-    const {web3, gameEvent} = this.props;
-        if (e) e.preventDefault();
-        this.setState({loading : true});
-        const {accounts} = this.state;
-        const bal = await web3.eth.getBalance(accounts);
-        const gameCreditInWei = await gameEvent.getDepositAmount.call(accounts);
-        const lockedDepositInWei = await gameEvent.getTotalLockedBalance.call(accounts);
-        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
-        const balance = web3.utils.fromWei(bal.toString(), 'ether');
-        const lockedDeposit = web3.utils.fromWei(lockedDepositInWei.toString(), 'ether');
-        this.setState({ gameCredit, balance, lockedDeposit, loading : false });
-    }
+
     handleCurrencyChange = (e) => {
       this.setState({currency:e.target.value});
     }
-  render() {
-    const {networkString, balance, gameCredit, newDeposit, newWithdraw, lockedDeposit, loading, loaded, accounts, currency} = this.state;
 
-    if( loaded === false){
-      return(
-        <div className="container fixed-bottom wallet">
+  render() {
+    const {networkString, balance, gameCredit, newDeposit, newWithdraw, lockedDeposit,  accounts, currency, walletHeight} = this.state;
+    const {helper} = this.props;
+    return(
+      <div>
+        <div id="fixScrolling" style={{height : (walletHeight + 25) + 'px'}}></div>
+        <div className="container fixed-bottom wallet" ref={this.walletArea}>
             <footer>
               <div className="navbar navbar-inverse navbar-fixed-bottom p-1 py-2">
                   <div className="container p-0">
@@ -95,41 +114,8 @@ export default class Wallet extends Component {
                           <i className="navbar-toggle fas fa-ellipsis-h d-inline"  data-toggle="collapse" data-target=".footer-body"></i>
                         </div>
                       </div>
-                      {/*this is the part that is always visible */}
-                      <div className="navbar-header w-100 p-0">
-                          <div className="row p-2">
-                              <div className="col-10 m-0 p-0 text-left align-middle">
-                                <span className="h4">ETH Wallet</span>
-                              </div>
-                              <div
-                                className="navbar-toggle col-2 m-0 p-0 pr-1 text-right "
-                                >
-                                <Link to="" className="d-block" >
-                                  <i className={loading? "fas fa-2x fa-fw fa-sync-alt fa-spin" : "fas fa-2x fa-fw fa-sync-alt "}></i>
-                                </Link>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </footer>
-        </div>
-      )
-    }
-    else{
-      return(
-        <div className="container fixed-bottom wallet">
-            <footer>
-              <div className="navbar navbar-inverse navbar-fixed-bottom p-1 py-2">
-                  <div className="container p-0">
-                      {/* this is the icons (dots) at the top of the opened menu on mobile only */}
-                      <div className="w-100 row p-0 m-0 d-sm-none">
-                        <div className="col-7 text-right">
-                          <i className="navbar-toggle fas fa-ellipsis-h d-inline"  data-toggle="collapse" data-target=".footer-body"></i>
-                        </div>
-                      </div>
-                      {/* this is the whole wallet part */}
-                      <div className="navbar-collapse collapse footer-body row">
+                      { accounts? (
+                        <div className="navbar-collapse collapse footer-body row">
                           <div className="row col-11">
                               <div className="col-12 col-md-6 order-1 m-0 p-2">
                                 <h4>Network : {networkString}</h4>
@@ -143,9 +129,9 @@ export default class Wallet extends Component {
                               <div className="col-12 col-md-6 order-2 order-sm-3 pt-2 section">
                                 <div className="row mx-0">
                                   <div className="my-auto">
-                                    <a href={"https://ropsten.etherscan.io/address/" + accounts} target="_blank">
+                                    <a href={"https://ropsten.etherscan.io/address/" + accounts[0]} target="_blank" rel="noopener noreferrer">
                                       <Blockie
-                                        address={accounts}
+                                        address={accounts[0]}
                                         config={{size:6}}
                                       />
                                     </a>
@@ -158,13 +144,13 @@ export default class Wallet extends Component {
                                 </div>
                                 <form className="form-group form-row" onSubmit={this.depositEther }>
                                   <input type="text" placeholder="Amount" className="col-7 m-0 p-2 " value={newDeposit} onChange={this.handleNewDeposit} />
-                                  <button type="submit" value="Deposit" className="col-5 m-0 p-0 btn btn-default">Deposit</button>
+                                  <button type="submit" value="Deposit" className="col-5 m-0 p-0 btn btn-primary">Deposit</button>
                                 </form>
                               </div>
                               <div className="col-12 col-md-6 order-3 order-sm-4 pt-2 section">
                                 <div className="row mx-0">
                                   <div className="my-auto">
-                                    <a href={"https://ropsten.etherscan.io/address/" + accounts} target="_blank">
+                                    <a href={"https://ropsten.etherscan.io/address/0x140E19Bb012687c017A94288eb7Bd061B3838BC3"} target="_blank" rel="noopener noreferrer">
                                       <Blockie
                                         address="0x140E19Bb012687c017A94288eb7Bd061B3838BC3"
                                         config={{size:6}}
@@ -178,8 +164,8 @@ export default class Wallet extends Component {
                                   </div>
                                 </div>
                                 <form className="form-group form-row" onSubmit={this.withdrawEther }>
-                                  <input type="text" placeholder={gameCredit} disabled="true" className="col-7 m-0 p-2" value={newWithdraw} onChange={this.handleNewWithdraw} />
-                                  <button type="submit" value="Withdraw" className="col-5 m-0 p-0 btn btn-default">Withdraw</button>
+                                  <input type="text" placeholder={gameCredit} disabled={true} className="col-7 m-0 p-2" value={newWithdraw} onChange={this.handleNewWithdraw} />
+                                  <button type="submit" value="Withdraw" className="col-5 m-0 p-0 btn btn-primary">Withdraw</button>
                                 </form>
                               </div>
                               <div className="col-12 col-md-6 ml-md-auto order-4 order-sm-2 pt-2 mr-md-0 pr-md-1 ml-1 pl-1 locked section">
@@ -198,46 +184,73 @@ export default class Wallet extends Component {
                             <Link to="/about"  className="d-block">
                               <i className="fas fa-2x fa-fw fa-info-circle mb-2"></i>
                             </Link>
+                            {/*
                             <Link to="" className="d-block" onClick={ this.refreshWallet } >
                               <i className={loading? "fas fa-2x fa-fw fa-sync-alt fa-spin" : "fas fa-2x fa-fw fa-sync-alt "}></i>
-                            </Link>
+                            </Link>*/}
                           </div>
-                      </div>
+                        </div>
+                      ) : null }
                       {/*this is the part that is always visible */}
                       <div className="navbar-header w-100 p-0">
-                          <div className="row p-2">
-                              <div className="col-10 m-0 p-0 text-left align-middle">
-                                <span className="h4">ETH Wallet</span>
-                              </div>
-                              <div
-                                className="navbar-toggle col-2 m-0 p-0 pr-1 text-right "
-                                data-toggle="collapse"
-                                data-target=".footer-body"
-                                >
-                                <Link to="#" >
-                                  <i className="d-inline fa-2x fas myChevron"></i></Link>
-                              </div>
+                        <div className="row p-2">
+                          <div className="col-10 m-0 p-0 text-left align-middle">
+                            <span className="h4">
+                              {
+                                helper === 'Infura'
+                                ? (
+                                      <a href="https://metamask.io/" target="_blank" rel="noopener noreferrer">
+                                        Please install MetaMask to use AiWar
+                                      </a>
+                                  )
+                                : (
+                                    helper === 'MetaMask'
+                                    ? (
+                                        "ETH Wallet"
+                                      )
+                                    : (
+                                      helper === 'locked'
+                                      ? (
+                                        "Please unlock metamask to use AiWar"
+                                      )
+                                      : (
+                                        "Please change your network to Ropsten"
+                                      )
+                                    )
+                                  )
+                              }
+                             </span>
+                            </div>
+                              { helper==='MetaMask' ? (
+                                <div className="navbar-toggle col-2 m-0 p-0 pr-1 text-right "
+                                  data-toggle="collapse"
+                                  data-target=".footer-body"
+                                  >
+                                  <Link to="#">
+                                    <i className="d-inline fa-2x fas myChevron"></i>
+                                  </Link>
+                                </div>
+                                ) : (
+                                  <div className="navbar-toggle col-2 m-0 p-0 pr-1 text-right " >
+                                    {
+                                      helper==='Infura' ? (
+                                        <a href="https://metamask.io/"target="_blank" rel="noopener noreferrer">
+                                          <img src="/MetaMask.png" alt='MetaMaskLogo' style={{width: 2.5 + 'em'}}/>
+                                        </a>
+                                      ) : (
+                                        <img src="/MetaMask.png" alt='MetaMaskLogo' style={{width: 2.5 + 'em'}}/>
+                                      )
+                                    }
+                                  </div>
+                                )
+                              }
                           </div>
                       </div>
                   </div>
               </div>
-          </footer> 
+          </footer>
         </div>
-      )
-
-    }
-
+      </div>
+    )
   }
 }
-
-/*the idea would be to get all the wallet part, and take it out.
-By making a sort of self-contained wallet component, I can reuse it
-in the next project, simply changing maybe a few classes.
-Classes could be made as attributes inside the
-<wallet /> component, adding to the modularization.
-
-The main issue is the inclusion of the whole Web3 stuff, that should only be
-included once... not sure how to manage it. Maybe with an if(web3) then?
-
-
-*/

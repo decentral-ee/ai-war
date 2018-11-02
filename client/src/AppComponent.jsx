@@ -21,7 +21,7 @@ class AppComponent extends Component {
             const latestBlockNumber = await web3.eth.getBlockNumber();
             const f = (toBlockNumber) => {
                 const fromBlockNumber = Math.max(0, toBlockNumber - BLOCK_RANGE);
-                console.log(`getNPastLogs ${fromBlockNumber}:${toBlockNumber}:${latestBlockNumber} ${events.length}`);
+                //console.log(`getNPastLogs ${fromBlockNumber}:${toBlockNumber}:${latestBlockNumber} ${events.length}`);
                 if (toBlockNumber < 0 ||
                     latestBlockNumber - fromBlockNumber > MAXIMUM_BLOCK_HISTORY) {
                     return resolve(events.reverse());
