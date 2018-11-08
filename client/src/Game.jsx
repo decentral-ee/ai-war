@@ -6,18 +6,18 @@ import GameRoundContract from "./core/build/contracts/GameRound.json";
 import TxButton from "./components/TxButton"
 
 class Game extends AppComponent {
-    Game = null
-    GameRound = null
-    game = null
-    state = {
-        gameName: null,
-        latestRounds: [],
-        refresh : true,
-        myGame : null   //can be '0xaddress', 'abort' or   null
-    }
 
     constructor(props) {
         super(props);
+        this.Game = null;
+        this.GameRound = null;
+        this.game = null;
+        this.state = {
+            gameName: null,
+            latestRounds: [],
+            refresh : true,
+            myGame : null
+        }
         this.createNewRound = this.createNewRound.bind(this);
         this.refreshLatestRounds = this.refreshLatestRounds.bind(this);
     }
@@ -35,6 +35,7 @@ class Game extends AppComponent {
     }
 
     async createNewRound(e) {
+      this.setState({myGame : 'InProgress'})
         const myAccount = this.props.app.state.accounts[0];
         const platform = this.props.app.platform;
         const gameEvent = this.props.app.gameEvent;
@@ -48,7 +49,11 @@ class Game extends AppComponent {
           }
         ).catch( (e) =>{
           console.log(e);
+          console.log('aborted!');
           this.setState({myGame : 'abort'});
+          setTimeout(()=>{
+            this.setState({myGame: null})
+          }, 7700);
         });
     }
 
@@ -131,16 +136,19 @@ class Game extends AppComponent {
                 </div>
             );
         };
-
         return (
-            <div>
+            <div id='game-creation'>
                 <h2 className="text-center">{ `${this.state.gameName} ` }</h2>
+                {console.log("myGame in game.jsx render(): ", myGame)}
                 <TxButton
-                  className="m-2 btn"
+                  config=
+                    {{
+                      className : "m-2 btn",
+                      success : "Round created!"
+                    }}
                   onClick={ this.createNewRound }
                   helper={helper}
                   buttonState={myGame}
-                  success="Round created!"
                   >
                   Create New Round
                 </TxButton>

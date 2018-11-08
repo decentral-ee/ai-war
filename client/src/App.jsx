@@ -5,16 +5,19 @@ import GameRound from './GameRound';
 import { Link, Switch, Route, Redirect } from 'react-router-dom';
 import getWeb3 from "./utils/getWeb3";
 import Wallet from "./components/Wallet"
- import Loader from 'react-loader-spinner'
+import Loader from 'react-loader-spinner'
 import AIWarPlatformContract from "./core/build/contracts/AIWarPlatform.json";
 import OpenEtherbetGameEventContract from "./core/build/contracts/OpenEtherbetGameEvent.json";
 import truffleContract from "truffle-contract";
+import {getExchangeRates} from "./utils/exchange";
+
 import "./App.css";
 class App extends Component {
     state = {
         accounts: [],
         initialized: false,
-        helper: null
+        helper: null,
+        rates : null
     };
     web3 = null;
     platform = null;
@@ -23,16 +26,22 @@ class App extends Component {
     constructor(props) {
       super(props);
       this.refreshNetwork = this.refreshNetwork.bind(this);
+      this.getRates();
     }
     componentDidMount() {  //ok so probably we need to avoid the IIFE, and insted use bind(this) to sort out all the issues...
       // Get network helper and web3 instance.
       this.refreshNetwork();
 
     }
-
+    async getRates(){
+      await getExchangeRates()
+        .then((rates)=>{
+          this.setState({rates});
+        });
+    }
     async refreshNetwork(e){
       let response = await getWeb3( this.web3, this.state.helper );
-      const { web3, deployments, helper} = response; 
+      const { web3, deployments, helper} = response;
       if(this.state.helper !== helper){
         const AIWarPlatform = truffleContract(AIWarPlatformContract);
         AIWarPlatform.setProvider(web3.currentProvider);
@@ -58,7 +67,7 @@ class App extends Component {
     //took out "refreshWallet"
 
     render() {
-      const { initialized, helper} = this.state;
+      const { initialized, helper, rates} = this.state;
         if (!initialized) {
             return (
                 <div className=" w-100 d-block d-flex" style={{height: '100vh'}}>
@@ -83,7 +92,7 @@ class App extends Component {
                         </Switch>
                     </div>
                     <div className="emptyDiv"></div>
-                    <Wallet web3={this.web3} gameEvent={this.gameEvent} helper={helper}/>
+                    <Wallet web3={this.web3} gameEvent={this.gameEvent} helper={helper} rates={rates}/>
                 </div>
             </Route>
         );

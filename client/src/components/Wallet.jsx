@@ -1,14 +1,14 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import Exchange from "./../utils/exchange.jsx";
-import { Blockie } from "dapparatus"
+import { Blockie } from "dapparatus";
+import TxInput from "./TxInput";
+import exchange, { format } from "./../utils/exchange.jsx";
+
 export default class Wallet extends Component {
     constructor(props) {
         super(props);
         this.walletArea = React.createRef();
-        this.depositEther = this.depositEther.bind(this);
         this.refreshWallet = this.refreshWallet.bind(this);
-        this.withdrawEther = this.withdrawEther.bind(this);
         this.state = {
             networkString: null,
             accounts: null,
@@ -54,53 +54,21 @@ export default class Wallet extends Component {
         const bal = await web3.eth.getBalance(accounts[0]);
         const gameCreditInWei = await gameEvent.getDepositAmount.call(accounts[0]);
         const lockedDepositInWei = await gameEvent.getTotalLockedBalance.call(accounts[0]);
-        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether');
         const balance = web3.utils.fromWei(bal.toString(), 'ether');
         const lockedDeposit = web3.utils.fromWei(lockedDepositInWei.toString(), 'ether');
+        const gameCredit = web3.utils.fromWei(gameCreditInWei.toString(), 'ether') - lockedDeposit;
         this.setState({ gameCredit, balance, lockedDeposit});
       }
       await new Promise(resolve => setTimeout(resolve,777));
       this.refreshWallet();
     }
-    handleNewDeposit = (e)=> {
-      const val = e.target.value;
-      if (/^(\d+(\.\d{1,18})?)|^(?![\s\S])$/.test(val)) {
-        this.setState({
-          newDeposit: val
-        });
-      }
-    }
-    async depositEther(e) {
-        e.preventDefault();
-        const {gameEvent, web3} = this.props;
-        await gameEvent.deposit({
-            from: this.state.accounts,
-            value: web3.utils.toWei(this.state.newDeposit, "ether")
-        });
-    }
-    handleNewWithdraw = (e) =>{
-      const val = e.target.value;
-      if (/^(\d+(\.\d{1,18})?)|^(?![\s\S])$/.test(val)) {
-        this.setState({
-          newWithdraw: val
-        });
-      }
-    }
-    async withdrawEther(e) {
-        e.preventDefault();
-        const {gameEvent} = this.props;
-        await gameEvent.withdrawAll({
-          from: this.state.accounts,
-        });
-    }
-
     handleCurrencyChange = (e) => {
       this.setState({currency:e.target.value});
     }
 
   render() {
-    const {networkString, balance, gameCredit, newDeposit, newWithdraw, lockedDeposit,  accounts, currency, walletHeight} = this.state;
-    const {helper} = this.props;
+    const {networkString, balance, gameCredit, lockedDeposit,  accounts, currency ='USD', walletHeight, buttonState} = this.state;
+    const {helper, gameEvent, web3, rates} = this.props;
     return(
       <div>
         <div id="fixScrolling" style={{height : (walletHeight + 25) + 'px'}}></div>
@@ -116,10 +84,10 @@ export default class Wallet extends Component {
                       </div>
                       { accounts? (
                         <div className="navbar-collapse collapse footer-body row">
-                          <div className="row col-11">
+                          <div className="row col">
                               <div className="col-12 col-md-6 order-1 m-0 p-2">
                                 <h4>Network : {networkString}</h4>
-                                <select value={this.state.currency} onChange={this.handleCurrencyChange} >
+                                <select value={currency} onChange={this.handleCurrencyChange} >
                                   <option name="currency" value="USD" defaultValue> USD </option>
                                   <option name="currency" value="EUR"> EUR </option>
                                   <option name="currency" value="GBP"> GBP </option>
@@ -138,41 +106,58 @@ export default class Wallet extends Component {
                                   </div>
                                   <div className="col">
                                     <h5>Wallet Balance</h5>
-                                    <h6>ETH { balance } </h6>
-                                    <h6><Exchange value={ balance } currency={ currency } /></h6>
+                                    <h6>ETH  { format(balance,9) } </h6>
+                                    <h6><span>{currency}  </span>{exchange('ETH',currency,balance,rates)}</h6>
                                   </div>
                                 </div>
-                                <form className="form-group form-row" onSubmit={this.depositEther }>
-                                  <input type="text" placeholder="Amount" className="col-7 m-0 p-2 " value={newDeposit} onChange={this.handleNewDeposit} />
-                                  <button type="submit" value="Deposit" className="col-5 m-0 p-0 btn btn-primary">Deposit</button>
-                                </form>
+                                <TxInput
+                                  fiat={currency}
+                                  txFunction={gameEvent.deposit}
+                                  helper={helper}
+                                  buttonState={buttonState}
+                                  gameEvent={gameEvent}
+                                  web3={web3}
+                                  accounts={accounts}
+                                  rates={rates}
+                                  maxValue={balance}
+                                  >Deposit
+                                  </TxInput>
                               </div>
                               <div className="col-12 col-md-6 order-3 order-sm-4 pt-2 section">
                                 <div className="row mx-0">
                                   <div className="my-auto">
-                                    <a href={"https://ropsten.etherscan.io/address/0x140E19Bb012687c017A94288eb7Bd061B3838BC3"} target="_blank" rel="noopener noreferrer">
+                                    <a href={"https://ropsten.etherscan.io/address/0x5c596d60fce3d47187ec05949f8ef8aa66b21eb4"} target="_blank" rel="noopener noreferrer">
                                       <Blockie
-                                        address="0x140E19Bb012687c017A94288eb7Bd061B3838BC3"
+                                        address="0x5c596d60fce3d47187ec05949f8ef8aa66b21eb4"
                                         config={{size:6}}
                                       />
                                     </a>
                                   </div>
                                   <div className="col">
-                                    <h5>Deposited Credit</h5>
-                                    <h6>ETH { gameCredit } </h6>
-                                    <h6><Exchange value={gameCredit} currency={currency} /></h6>
+                                    <h5>Available Credit</h5>
+                                    <h6>ETH  { format(gameCredit,9) } </h6>
+                                    <h6><span>{currency}  </span>{exchange('ETH',currency,gameCredit,rates)}</h6>
                                   </div>
                                 </div>
-                                <form className="form-group form-row" onSubmit={this.withdrawEther }>
-                                  <input type="text" placeholder={gameCredit} disabled={true} className="col-7 m-0 p-2" value={newWithdraw} onChange={this.handleNewWithdraw} />
-                                  <button type="submit" value="Withdraw" className="col-5 m-0 p-0 btn btn-primary">Withdraw</button>
-                                </form>
+                                <TxInput
+                                  fiat={currency}
+                                  txFunction={gameEvent.withdrawAll}
+                                  helper={helper}
+                                  buttonState={buttonState}
+                                  gameEvent={gameEvent}
+                                  web3={web3}
+                                  accounts={accounts}
+                                  rates={rates}
+                                  all={true}
+                                  maxValue={gameCredit}
+                                  >Withdraw
+                                  </TxInput>
                               </div>
                               <div className="col-12 col-md-6 ml-md-auto order-4 order-sm-2 pt-2 mr-md-0 pr-md-1 ml-1 pl-1 locked section">
                                 <div className="rounded px-2 pt-2 pb-1">
                                   <h5>Locked Credit</h5>
-                                  <h6>ETH { lockedDeposit } </h6>
-                                  <h6><Exchange value={ lockedDeposit } currency={ currency }/></h6>
+                                  <h6>ETH  { format(lockedDeposit,9) } </h6>
+                                  <h6><span>{currency}  </span>{exchange('ETH',currency,lockedDeposit,rates)}</h6>
                                 </div>
                               </div>
                           </div>

@@ -1,38 +1,40 @@
-
-import React, { Component } from 'react';
-
-export default class Exchange extends Component {
-  state = {
-    rates: {}
+export default function exchange(fromCurrency='ETH', toCurrency='USD', value, rates){
+  if(!rates){
+    rates = (async () => getExchangeRates())();
   }
-  async componentDidMount(){
-    const currencyList = ['USD', 'EUR', 'GBP', 'JPY'];
-    const apiUrl = `https://min-api.cryptocompare.com/data/pricemulti?fsyms=ETH&tsyms=`
-    try{
-      const rawExchangeRates = await fetch(apiUrl + currencyList.join());
-      const jsonExchangeRates = await rawExchangeRates.json();
-      this.setState({
-        rates : jsonExchangeRates['ETH']
-      });
-    }
-    catch(error){
-      console.log(error); 
-    }
+  let result;
+  if(fromCurrency==='ETH'){
+    result = value * rates[toCurrency];
   }
-  render() {
-    const { value, currency } = this.props;
-    const { rates } = this.state;
-    let symbol = currency;
-    let result = value * rates[symbol];
-    let formattedResult = Math.round(result*100)/100 ;
-    return (
-      <span>{symbol +" "+ formattedResult}
-      </span>
-    )
+  else if(toCurrency==='ETH'){
+    result = value / rates[fromCurrency];
   }
-    static defaultProps = {
-      currency: "USD"
-    }
+  else{
+    console.log('error');
+    return 0;
+  }
+  let formattedResult =
+    toCurrency==='ETH'
+      ? format(result,9)
+      : format(result,2) ;
+  return (formattedResult);
+}
 
+export const format = (value, decimals)=> {
+  if (value.toString().slice(-1)==='.') return value;
+  if ((value*Math.pow(10,decimals))%10===0) return value; 
+  return Math.round(value*(Math.pow(10,decimals)))/(Math.pow(10,decimals));
+}
 
+export const getExchangeRates = async (currencyList = ['USD', 'EUR', 'GBP', 'JPY']) =>{
+  const apiUrl = `https://min-api.cryptocompare.com/data/pricemulti?fsyms=ETH&tsyms=`
+  try{
+    const rawExchangeRates = await fetch(apiUrl + currencyList.join());
+    const jsonExchangeRates = await rawExchangeRates.json();
+    return jsonExchangeRates['ETH'];
+  }
+  catch(error){
+    console.log(error);
+    return error;
+  }
 }

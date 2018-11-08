@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "dependencies": {
     "bignumber.js": "^7.2.1",
-    "dapparatus": "^1.0.24",
+    "dapparatus": "^1.0.35",
     "es6-promise": "^4.2.5",
-    "react": "^16.4.2",
+    "react": "^16.6.0",
+    "react-custom-properties": "^1.2.0",
     "react-dom": "^16.4.2",
     "react-loader-spinner": "^2.0.6",
     "react-redux": "^5.0.7",

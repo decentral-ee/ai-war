@@ -4,8 +4,7 @@ import Deployments from "../core/sdk/deployments.js"
 const getWeb3 = (currentWeb3, helper) =>
   new Promise((resolve, reject) => {
     // Wait for loading completion to avoid race conditions with web3 injection timing.
-    console.log("window.ethereum: ", window.ethereum);
-    if (!helper) { //first execution. Cheeck if Metamask
+     if (!helper) { //first execution. Cheeck if Metamask
       if( typeof window.web3 !== "undefined" ){
         const web3 = new Web3(window.web3.currentProvider);
         checkMetamask(web3);
@@ -21,7 +20,7 @@ const getWeb3 = (currentWeb3, helper) =>
       // Checking if Web3 has been injected by the browser (Mist/MetaMask).
         let web3;
         if(helper === 'network') {
-          web3 = new web3(window.web3.currentProvider) || currentWeb3;
+          web3 = new Web3(window.web3.currentProvider) || currentWeb3;
         }
         else{
           web3 = currentWeb3;
@@ -47,7 +46,7 @@ const getWeb3 = (currentWeb3, helper) =>
 
       /*const localhost = new Web3.providers.HttpProvider(
           "http://127.0.0.1:9545"
-      );*/ 
+      );*/
       const infura = new Web3.providers.HttpProvider(
         "https://ropsten.infura.io/v3/f0751f2b1a454d22bd126ac0b9b2cb53"
       );
