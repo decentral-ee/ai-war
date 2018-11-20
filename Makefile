@@ -10,7 +10,7 @@ clean:
 
 test:
 	make -C core test
-	make -C client test
+	#make -C client test
 
 prepare:
 	npm install
