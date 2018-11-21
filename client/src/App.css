@@ -2,14 +2,20 @@
   from light to dark
     #efbbff
     #d896ff
-    #673ab7 (wallet bg-color)
     #5d299c (used for inputs in wallet)
     #5d299c (used for buttons in wallet)
-    #48005e (app bg-color)
 */
+:root {
+  --bg-color : #48005e; /*(app bg-color)*/
+  --bg-color-secondary : #673ab7; /*((wallet bg-color))*/
+  --btn-primary : #eeeeee; /*primary button color */
+  --input-secondary : #5d299c; /*secondary inputs (txInputs) */
+  --btn-secondary : #581d8b; /*secondary button (txInputs) */
+  --text-secodary : var(--btn-primary); /* secondary btn color */
+}
 @import url('https://fonts.googleapis.com/css?family=Lato|Righteous|Roboto');
 body{
-  background-color: #48005e;
+  background-color: var(--bg-color);
   color:#ffffff;
   font-family: "Roboto", sans-serif !important;
 }
@@ -36,6 +42,10 @@ body{
   text-align: center;
 }
 
+.round > *{
+  border-radius:50%;
+  overflow: hidden;
+}
 /* gamelist styles */
 
 .gameList i{
@@ -61,56 +71,65 @@ a:focus, a:hover{
     border: 0 none;
     font-weight: 900;
     letter-spacing: 1px;
-    border-radius:10px;
+    border-radius:0px;
 }
-
-
 .btn:focus, .btn:active:focus, .btn.active:focus {
     outline: 0 none;
 }
-
 .btn-primary {
     background: #eeeeee;
     color: #111111;
 }
-.btn-default {
-  margin:3px;
-}
-
-.btn:disabled{
+.btn-primary:disabled{
   background: #cccccc;
   color: #222222;
+}
+.btn:focus, .btn:hover{
+  background-color:#dddddd;
+  color:#581d8b;
 }
 
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-default:hover, .btn-default:focus, .btn-primary.active, .open > .dropdown-toggle.btn-primary {
     background: #dddddd;
     color: #000000;
 }
+.btn:disabled:hover{
+    background: inherit;
+    color: inherit;
+}
+ .btn.btn-waiting {
+  position: relative;
+}
+.btn.btn-waiting:disabled, .btn.btn-warning:disabled{
+  opacity: 1 !important;
+}
+/* Square inputs styles */
+.squareEdges div{
+  overflow: hidden;
+}
+.squareEdges input, .squareEdges label , .squareEdges .btn{
+  border-radius:0;
+  background-color:var(--btn-secondary);
+  color: var(--text-secondary);
+  border:none;
+  font-weight: 400;
+}
+.squareEdges label{
+  cursor: pointer;
+  background-color:var(--input-secondary);
+}
+.squareEdges input{
+  font-weight: 100;
+  background-color:var(--input-secondary);
+}
 
 /*wallet are styling */
 .wallet{
   border-radius: 10px 10px 0 0;
-    background-color: #673ab7;
-    color:#ffffff;
-}
-.wallet input{
-  border-radius:0;
-  background-color:#5d299c;
-  color:#dddddd;
-  border:none;
-}
-.wallet button{
-  border-radius:0;
-  background-color:#581d8b;
-  color:#ffffff;
-  font-weight:400;
+    background-color: var(--bg-color-secondary);
 }
 .wallet .section h6, .wallet .section h5{
   line-height:0.7;
-}
-.wallet button:focus, .wallet button:hover{
-  background-color:#dddddd;
-  color:#581d8b;
 }
 .wallet .locked div{
   background-color:rgba(0,0,0,0.25);
@@ -122,4 +141,203 @@ a:focus, a:hover{
 }
 [aria-expanded="true"] .myChevron::before{
   content: "\f13a";
+}
+/* Make sure this stuff is called somewhere. Not sure how it will render otherwise...
+:root{
+  --a : 60px;
+  --s : 10000ms;
+  --w : 2px;
+  --d : 3px;
+  --color : #ddd;
+  --b : 240;
+  --ad : calc(var(--a) - (var(--d) * 2));
+  --a-b-d : calc(var(--b) - var(--ad) - var(--d) );
+} */
+.btn.btn-waiting span{
+  content: "";
+  display: block;
+  position: absolute;
+  background-color: var(--color);
+}
+.btn.btn-waiting .line-1 {
+  width: var(--w);
+  left: var(--d);
+  bottom: var(--d);
+  -webkit-animation: move1 var(--s) infinite;
+          animation: move1 var(--s) infinite;
+  -webkit-animation-fill-mode: both;
+          animation-fill-mode: both;
+}
+.btn.btn-waiting .line-2 {
+  height: var(--w);
+  left: var(--d);
+  top: var(--d);
+  -webkit-animation: move2 var(--s) infinite;
+          animation: move2 var(--s) infinite;
+  -webkit-animation-fill-mode: both;
+          animation-fill-mode: both;
+}
+.btn.btn-waiting .line-3 {
+  width: var(--w);
+  right: var(--d);
+  top: var(--d);
+  -webkit-animation: move3 var(--s) infinite;
+          animation: move3 var(--s) infinite;
+  -webkit-animation-fill-mode: both;
+          animation-fill-mode: both;
+}
+.btn.btn-waiting .line-4 {
+  height: var(--w);
+  right: var(--d);
+  bottom: var(--d);
+  -webkit-animation: move4 var(--s) infinite;
+          animation: move4 var(--s) infinite;
+  -webkit-animation-fill-mode: both;
+          animation-fill-mode: both;
+}
+
+@-webkit-keyframes move1 {
+  0%, 60% {
+    height: 0%;
+    bottom: var(--d);
+  }
+  80% {
+    height: var(--ad);
+    bottom: var(--d);
+  }
+  100% {
+    height: 0%;
+    bottom:  calc(100% - var(--d));
+  }
+}
+
+@keyframes move1 {
+  0%, 60% {
+    height: 0;
+    bottom: var(--d);
+  }
+  80% {
+    height: var(--ad);
+    bottom: var(--d);
+  }
+  100% {
+    height: 0%;
+    bottom: calc(100% - var(--d));
+  }
+}
+@-webkit-keyframes move2 {
+  0% {
+    width: var(--ad);
+    left: var(--d);
+  }
+  60% {
+    width: var(--ad);
+    left: var(--a-b-d);
+  }
+  80% {
+    width: 0;
+    left:  calc(100% - var(--d));
+  }
+  80.01% {
+    width: 0;
+    left: var(--d);
+  }
+  100% {
+    width: var(--ad);
+    left: var(--d);
+  }
+}
+@keyframes move2 {
+  0% {
+    width: var(--ad);
+    left: var(--d);
+  }
+  60% {
+    width: var(--ad);
+    left: var(--a-b-d);
+  }
+  80% {
+    width: 0;
+    left: calc(100% - var(--d));
+  }
+  80.01% {
+    width: 0;
+    left: var(--d);
+  }
+  100% {
+    width: var(--ad);
+    left: var(--d);
+  }
+}
+@-webkit-keyframes move3 {
+  0%, 60% {
+    height: 0%;
+    top: var(--d);
+  }
+  80% {
+    height: var(--ad);
+    top: var(--d);
+  }
+  100% {
+    height: 0%;
+    top: calc(100% - var(--d));
+  }
+}
+@keyframes move3 {
+  0%, 60% {
+    height: 0%;
+    top: var(--d);
+  }
+  80% {
+    height: var(--ad);
+    top: var(--d);
+  }
+  100% {
+    height: 0%;
+    top: calc(100% - var(--d));
+  }
+}
+@-webkit-keyframes move4 {
+  0% {
+    width: var(--ad);
+    right: var(--d);
+  }
+  60% {
+    width: var(--ad);
+    right: var(--a-b-d);
+  }
+  80% {
+    width: 0;
+    right:  calc(100% - var(--d));
+  }
+  80.01% {
+    width: 0;
+    right: var(--d);
+  }
+  100% {
+    width: var(--ad);
+    right: var(--d);
+  }
+}
+@keyframes move4 {
+  0% {
+    width: var(--ad);
+    right: var(--d);
+  }
+  60% {
+    width: var(--ad);
+    right: var(--a-b-d);
+  }
+  80% {
+    width: 0;
+    right: calc(100% - var(--d));
+  }
+  80.01% {
+    width: 0;
+    right: var(--d);
+  }
+  100% {
+    width: var(--ad);
+    right: var(--d);
+  }
 }

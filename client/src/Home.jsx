@@ -7,27 +7,6 @@ function GameIcon(props) {
   return(
     <img src={"/" + props +".png"} alt={props}/>
   );
-  /*
-  if (props === "TicTacToe"){
-    return (
-      <i className="fas fa-hashtag align-middle mr-2"></i>
-    );
-  };
-  if (name === "R-P-S"){
-    return (
-      <i className="far fa-hand-scissors align-middle mr-2"></i>
-    );
-  };
-  if (name === "Gomoku"){
-    return (
-      <i className="fas fa-neuter align-middle mr-2"></i>
-    );
-  };
-  if (name === "Chess"){
-    return (
-      <i className="fas fa-chess align-middle mr-2"></i>
-    );
-  };*/
 }
 
 class Home extends AppComponent {
